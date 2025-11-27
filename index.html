@@ -31,23 +31,30 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       rel="stylesheet"
     />
+    <!-- Fonts: Noto Sans TC for standard text, Zen Maru Gothic for kawaii numbers/English -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Yomogi&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap"
       rel="stylesheet"
     />
 
     <style>
       /* --- Base Styles --- */
       body {
-        font-family: "Zen Maru Gothic", sans-serif;
+        /* Main font is Noto Sans TC (Traditional Chinese safe) */
+        font-family: "Noto Sans TC", sans-serif;
         background-color: #ffe4e6;
         transition: background-color 0.8s ease;
         padding-bottom: 120px;
         overscroll-behavior-y: none;
         -webkit-tap-highlight-color: transparent;
+        overflow: hidden; /* Lock scrolling to app container on desktop */
       }
 
       /* --- Kawaii UI Elements --- */
+      .font-cute {
+        font-family: "Zen Maru Gothic", sans-serif;
+      }
+
       .cute-checkbox {
         appearance: none;
         background-color: #fff;
@@ -82,10 +89,6 @@
         background-color: #ffffff;
         background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
-      }
-
-      .handwritten {
-        font-family: "Yomogi", cursive;
       }
 
       /* --- Animations --- */
@@ -152,13 +155,41 @@
         transform: translateY(0);
       }
 
-      /* --- Switch Toggle --- */
-      .toggle-checkbox:checked {
-        right: 0;
-        border-color: #68d391;
+      /* --- Toast --- */
+      #toast-container {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 100;
+        pointer-events: none;
+        width: 90%;
+        max-width: 350px;
       }
-      .toggle-checkbox:checked + .toggle-label {
-        background-color: #68d391;
+      .toast {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px 20px;
+        border-radius: 50px;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1),
+          0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        color: #44403c;
+        font-weight: bold;
+        font-size: 0.9rem;
+        text-align: center;
+        margin-bottom: 10px;
+        opacity: 0;
+        transform: translateY(-20px);
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid rgba(0, 0, 0, 0.05);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
       }
 
       /* --- Utilities --- */
@@ -176,7 +207,7 @@
         transform: scale(0.95);
       }
 
-      /* Input clean up */
+      /* Input Clean up */
       input[type="number"]::-webkit-inner-spin-button,
       input[type="number"]::-webkit-outer-spin-button {
         -webkit-appearance: none;
@@ -188,10 +219,7 @@
     class="min-h-screen flex justify-center items-start sm:items-center sm:py-10"
   >
     <!-- Toast Container -->
-    <div
-      id="toast-container"
-      class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] pointer-events-none w-[90%] max-w-[350px]"
-    ></div>
+    <div id="toast-container"></div>
 
     <!-- Main App Container -->
     <div
@@ -213,10 +241,10 @@
               </div>
             </div>
             <h1
-              class="text-3xl font-black text-stone-700 tracking-tight drop-shadow-sm"
+              class="text-3xl font-black text-stone-700 tracking-tight drop-shadow-sm font-cute"
             >
               ShunMemo<span
-                class="text-stone-400 text-sm font-medium ml-2 handwritten"
+                class="text-stone-400 text-sm font-medium ml-2 font-cute"
                 >旬メモ</span
               >
             </h1>
@@ -231,21 +259,19 @@
               <i class="fa-solid fa-gear text-xs"></i>
             </button>
 
-            <!-- Rate Display -->
+            <!-- Rate Display (Read Only) -->
             <div
               id="rate-display-container"
-              class="cursor-pointer bg-white/60 backdrop-blur px-3 py-1.5 rounded-xl border border-stone-100 shadow-sm hover:bg-white transition-all"
-              onclick="updateCustomRate()"
+              class="bg-white/60 backdrop-blur px-3 py-1.5 rounded-xl border border-stone-100 shadow-sm cursor-default"
             >
               <div
                 class="text-[9px] text-stone-400 font-bold mb-0.5 flex items-center justify-end gap-1"
               >
-                <span id="base-currency-label">JPY</span> 匯率
-                <i class="fa-solid fa-pen text-[8px]"></i>
+                <span id="base-currency-label" class="font-cute">JPY</span> 匯率
               </div>
               <div
                 id="rate-ticker"
-                class="text-sm font-black text-stone-700 font-mono"
+                class="text-sm font-black text-stone-700 font-cute"
               >
                 0.215
               </div>
@@ -280,7 +306,7 @@
             </button>
           </div>
 
-          <!-- Sort Controls (Unified Height) -->
+          <!-- Sort Controls (Unified Height h-10) -->
           <div class="flex gap-1 h-10">
             <div class="relative h-full">
               <select
@@ -331,9 +357,7 @@
           >
             <i class="fa-solid fa-basket-shopping text-4xl text-stone-200"></i>
           </div>
-          <p class="handwritten text-xl font-bold text-stone-400">
-            購物車是空的呦
-          </p>
+          <p class="text-xl font-bold text-stone-400">購物車是空的呦</p>
           <p class="text-xs mt-2 opacity-70 bg-white/50 px-3 py-1 rounded-full">
             按右下角 + 新增好物
           </p>
@@ -523,14 +547,15 @@
               <input type="hidden" id="input-target" value="self" />
             </div>
 
-            <!-- Price (Strict Numeric) -->
+            <!-- Price -->
             <div>
               <label
                 class="text-[10px] font-bold text-stone-400 ml-1 uppercase tracking-wider"
                 >當地價格</label
               >
               <div class="flex gap-2 mt-1">
-                <div class="relative w-24">
+                <!-- FIX: Added flex-shrink-0 and w-24 to prevent squash -->
+                <div class="relative w-24 flex-shrink-0">
                   <select
                     id="input-currency"
                     onchange="updateRateDisplay(); updatePriceCalc()"
@@ -550,9 +575,8 @@
                   type="number"
                   inputmode="decimal"
                   id="input-price"
-                  class="flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl font-bold text-stone-700 focus:outline-none focus:bg-white focus:border-stone-400 transition-all font-mono text-lg"
+                  class="flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-2xl font-bold text-stone-700 focus:outline-none focus:bg-white focus:border-stone-400 transition-all font-cute text-lg"
                   placeholder="0"
-                  onkeydown="return /[0-9.]/.test(event.key) || ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)"
                 />
               </div>
               <div
@@ -637,7 +661,7 @@
           </button>
         </div>
 
-        <div class="space-y-5">
+        <div class="space-y-6">
           <!-- Toggle: Show Exchange Rate -->
           <div class="flex justify-between items-center">
             <div>
@@ -646,21 +670,18 @@
                 在首頁顯示匯率換算面板
               </div>
             </div>
-            <div
-              class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in"
-            >
+            <!-- Tailwind Peer Toggle for Smooth Animation -->
+            <label class="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                name="toggle"
                 id="toggle-rate"
-                class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-stone-300"
+                class="sr-only peer"
                 onchange="saveSettings()"
               />
-              <label
-                for="toggle-rate"
-                class="toggle-label block overflow-hidden h-5 rounded-full bg-stone-200 cursor-pointer"
-              ></label>
-            </div>
+              <div
+                class="w-11 h-6 bg-stone-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-green-400 transition-colors duration-300"
+              ></div>
+            </label>
           </div>
 
           <!-- Toggle: Show Smart Tags -->
@@ -671,21 +692,17 @@
                 新增商品時顯示推薦規格
               </div>
             </div>
-            <div
-              class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in"
-            >
+            <label class="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                name="toggle"
                 id="toggle-tags"
-                class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-stone-300"
+                class="sr-only peer"
                 onchange="saveSettings()"
               />
-              <label
-                for="toggle-tags"
-                class="toggle-label block overflow-hidden h-5 rounded-full bg-stone-200 cursor-pointer"
-              ></label>
-            </div>
+              <div
+                class="w-11 h-6 bg-stone-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-green-400 transition-colors duration-300"
+              ></div>
+            </label>
           </div>
 
           <!-- Toggle: Show Clerk Mode -->
@@ -696,26 +713,24 @@
                 點擊圖片放大並變暗背景
               </div>
             </div>
-            <div
-              class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in"
-            >
+            <label class="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
-                name="toggle"
                 id="toggle-clerk"
-                class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300 left-0 border-stone-300"
+                class="sr-only peer"
                 onchange="saveSettings()"
               />
-              <label
-                for="toggle-clerk"
-                class="toggle-label block overflow-hidden h-5 rounded-full bg-stone-200 cursor-pointer"
-              ></label>
-            </div>
+              <div
+                class="w-11 h-6 bg-stone-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all after:duration-300 peer-checked:bg-green-400 transition-colors duration-300"
+              ></div>
+            </label>
           </div>
         </div>
 
         <div class="mt-8 pt-4 border-t border-stone-100 text-center">
-          <p class="text-[10px] text-stone-300 font-bold">ShunMemo v2.0</p>
+          <p class="text-[10px] text-stone-300 font-bold font-cute">
+            ShunMemo v2.3
+          </p>
         </div>
       </div>
     </div>
@@ -764,9 +779,8 @@
                     type="number"
                     inputmode="decimal"
                     id="purchase-actual-price"
-                    class="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl font-bold text-stone-700 text-sm focus:border-green-400 focus:outline-none"
+                    class="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl font-bold text-stone-700 text-sm focus:border-green-400 focus:outline-none font-cute"
                     placeholder="實際金額"
-                    onkeydown="return /[0-9.]/.test(event.key) || ['Backspace','Delete','ArrowLeft','ArrowRight','Tab'].includes(event.key)"
                   />
                   <div
                     class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-stone-400"
@@ -937,11 +951,10 @@
       // --- Init ---
       function init() {
         detectSeason();
-        fetchRates();
-        loadSettings(); // Apply settings on load
+        fetchRates(); // Auto fetch rates
+        loadSettings();
         renderList();
 
-        // Event Listeners
         document
           .getElementById("input-price")
           .addEventListener("input", updatePriceCalc);
@@ -972,7 +985,7 @@
         } · ${season.toUpperCase()}`;
 
         const fab = document.getElementById("fab-btn");
-        fab.className = `absolute bottom-24 right-6 w-16 h-16 rounded-[24px] shadow-xl text-white flex items-center justify-center text-2xl transition-transform hover:scale-110 active:scale-90 z-30 btn-press border-4 border-white ${currentTheme.btn}`;
+        fab.className = `absolute bottom-24 right-6 w-16 h-16 rounded-[24px] shadow-xl shadow-stone-200/50 text-white flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-90 z-30 btn-press border-4 border-white ${currentTheme.btn}`;
         document.getElementById(
           "add-btn"
         ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${currentTheme.btn}`;
@@ -1003,17 +1016,14 @@
       }
 
       function applySettings() {
-        // 1. Rate Display
         const rateContainer = document.getElementById("rate-display-container");
         if (rateContainer)
           rateContainer.style.display = settings.showRate ? "block" : "none";
 
-        // 2. Smart Tags
         const tagsContainer = document.getElementById("smart-tags-container");
         if (tagsContainer)
           tagsContainer.style.display = settings.showTags ? "block" : "none";
 
-        // 3. Clerk Mode (handled in renderList)
         renderList();
       }
 
@@ -1028,9 +1038,11 @@
             const newRates = {};
             for (let k in data.rates) newRates[k] = 1 / data.rates[k];
             rates = { ...newRates, ...rates };
+            updateRateDisplay();
           }
-        } catch (e) {}
-        updateRateDisplay();
+        } catch (e) {
+          console.log("Rate fetch failed, using fallback");
+        }
       }
 
       function updateRateDisplay() {
@@ -1047,28 +1059,19 @@
         }
       }
 
-      function updateCustomRate() {
-        const curr = document.getElementById("input-currency")
-          ? document.getElementById("input-currency").value
-          : "JPY";
-        const newRate = prompt(`請輸入 1 ${curr} 對台幣的匯率`, rates[curr]);
-        if (newRate && !isNaN(newRate)) {
-          rates[curr] = parseFloat(newRate);
-          updateRateDisplay();
-          renderList();
-          showToast(`匯率已更新`);
-        }
-      }
-
       function pasteUrl() {
         navigator.clipboard
           .readText()
           .then((text) => {
-            document.getElementById("input-url").value = text;
-            showToast("已貼上網址");
+            if (text) {
+              document.getElementById("input-url").value = text;
+              showToast("已貼上網址");
+            } else {
+              showToast("剪貼簿是空的", "error");
+            }
           })
           .catch(() => {
-            showToast("無法讀取剪貼簿", "error");
+            showToast("無法讀取剪貼簿 (權限不足)", "error");
           });
       }
 
@@ -1286,22 +1289,22 @@
               const actTwd = Math.round(item.actualPrice * rate);
               priceHtml = `
                             <div class="text-right flex flex-col items-end">
-                                <div class="text-[9px] text-stone-300 line-through mb-0.5">${
+                                <div class="text-[9px] text-stone-300 line-through mb-0.5 font-cute">${
                                   item.currency
                                 } ${item.price}</div>
-                                <div class="text-sm font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100">${
+                                <div class="text-sm font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100 font-cute">${
                                   item.currency
                                 } ${item.actualPrice.toLocaleString()}</div>
-                                <div class="text-[10px] text-green-600 font-bold mt-1 bg-green-50/50 px-1 rounded">≈ NT$ ${actTwd.toLocaleString()}</div>
+                                <div class="text-[10px] text-green-600 font-bold mt-1 bg-green-50/50 px-1 rounded font-cute">≈ NT$ ${actTwd.toLocaleString()}</div>
                             </div>`;
             } else {
               priceHtml = item.price
                 ? `
                             <div class="text-right flex flex-col items-end">
-                                <div class="text-base font-black text-stone-700 leading-none">${
+                                <div class="text-base font-black text-stone-700 leading-none font-cute">${
                                   item.currency
                                 } ${item.price.toLocaleString()}</div>
-                                <div class="text-[10px] text-stone-400 font-bold mt-1 bg-stone-100 px-1.5 py-0.5 rounded-md">≈ NT$ ${estTwd.toLocaleString()}</div>
+                                <div class="text-[10px] text-stone-400 font-bold mt-1 bg-stone-100 px-1.5 py-0.5 rounded-md font-cute">≈ NT$ ${estTwd.toLocaleString()}</div>
                             </div>`
                 : "";
             }
