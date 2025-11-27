@@ -242,6 +242,21 @@
         pointer-events: none;
         display: none;
       }
+      /* --- FAB Animation --- */
+      #fab-btn {
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s,
+          bottom 0.3s;
+        /* 預設狀態 */
+        transform: scale(1) translateY(0);
+        opacity: 1;
+      }
+
+      /* 當加上 .hide class 時隱藏 */
+      #fab-btn.hide {
+        transform: scale(0.8) translateY(20px); /* 縮小並往下一點 */
+        opacity: 0.3; /* 變半透明 (如果您想完全消失改成 0) */
+        pointer-events: none; /* 避免誤觸 */
+      }
     </style>
   </head>
   <body class="flex justify-center items-start sm:items-center sm:py-10">
@@ -1107,6 +1122,26 @@
             document.getElementById("home-rate-picker").classList.add("hidden");
           }
         };
+        // === 捲動時自動隱藏 FAB ===
+        const listContainer = document.getElementById("list-container");
+        const fab = document.getElementById("fab-btn");
+        let lastScrollTop = 0;
+        let scrollTimeout;
+
+        listContainer.addEventListener("scroll", () => {
+          const currentScroll = listContainer.scrollTop;
+
+          // 1. 正在捲動時 -> 隱藏
+          fab.classList.add("hide");
+
+          // 2. 停止捲動 0.5 秒後 -> 顯示
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            fab.classList.remove("hide");
+          }, 500); // 0.5秒後自動出現
+
+          lastScrollTop = currentScroll;
+        });
       }
 
       // --- Theme Logic ---
