@@ -864,9 +864,1078 @@
               <div class="text-sm font-bold text-stone-700">購物助手標籤</div>
               <div class="text-[10px] text-stone-400">顯示常用的規格選項</div>
             </div>
+            <label class="relative inline-flex items-center cursor-pointer"
+              ><input
+                type="checkbox"
+                id="toggle-tags"
+                class="sr-only peer"
+                onchange="saveSettings()" />
+              <div
+                class="w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-green-400 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
+              ></div
+            ></label>
+          </div>
+        </div>
+        <div class="mt-8 pt-4 border-t border-stone-100 text-center">
+          <p class="text-[10px] text-stone-300 font-bold">BuyMemo v3.0</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Purchase Modal (Same) -->
+    <div
+      id="purchase-modal"
+      class="modal-backdrop items-center justify-center p-6 z-50"
+    >
+      <div
+        class="modal-content bg-white w-full max-w-sm rounded-[36px] shadow-2xl relative overflow-hidden"
+      >
+        <div
+          class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-pink-300 via-yellow-200 to-sky-300"
+        ></div>
+        <div class="p-6 pt-8 text-center">
+          <div
+            class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-green-500 text-2xl animate-bounce"
+          >
+            <i class="fa-solid fa-check"></i>
+          </div>
+          <h2 class="text-xl font-black text-stone-700 mb-1">恭喜入手！🎉</h2>
+          <div
+            class="bg-stone-50 p-1 rounded-2xl border border-stone-100 mb-4 text-left"
+          >
+            <div class="flex items-center gap-2 p-3">
+              <div
+                onclick="document.getElementById('purchase-img-input').click()"
+                class="w-14 h-14 bg-white border-2 border-dashed border-stone-300 rounded-xl flex items-center justify-center text-stone-300 cursor-pointer flex-shrink-0 relative overflow-hidden hover:border-green-400 transition-colors"
+              >
+                <i class="fa-solid fa-camera"></i
+                ><img
+                  id="purchase-img-preview"
+                  class="hidden absolute inset-0 w-full h-full object-cover"
+                />
+              </div>
+              <div class="flex-1">
+                <label class="text-[10px] font-bold text-stone-400 ml-1"
+                  >實付金額</label
+                >
+                <div class="relative">
+                  <input
+                    type="number"
+                    inputmode="decimal"
+                    min="0"
+                    id="purchase-actual-price"
+                    class="w-full px-3 py-2 bg-white border border-stone-200 rounded-xl font-bold text-stone-700 text-sm focus:border-green-400 focus:outline-none font-cute"
+                    placeholder="實際金額"
+                  />
+                  <div
+                    class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-stone-400"
+                  >
+                    元
+                  </div>
+                </div>
+              </div>
+            </div>
+            <input
+              type="file"
+              id="purchase-img-input"
+              accept="image/*"
+              class="hidden"
+              onchange="handleImage(this, 'purchase-img-preview')"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              onclick="confirmPurchase(false)"
+              class="py-3.5 rounded-2xl border-2 border-stone-100 text-stone-400 font-bold text-xs hover:bg-stone-50 btn-press"
+            >
+              直接打勾</button
+            ><button
+              onclick="confirmPurchase(true)"
+              class="py-3.5 rounded-2xl bg-green-400 text-white font-bold text-xs shadow-lg hover:bg-green-500 btn-press"
+            >
+              更新並完成
+            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- Restore Modal (Same) -->
+    <div
+      id="restore-modal"
+      class="modal-backdrop items-center justify-center p-6 z-50"
+    >
+      <div
+        class="modal-content bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6"
+      >
+        <div class="flex justify-between items-center mb-5">
+          <h3 class="font-black text-stone-700 text-lg">還原紀錄</h3>
+          <button
+            onclick="closeModal('restore-modal')"
+            class="w-8 h-8 rounded-full bg-stone-100 text-stone-300 flex items-center justify-center"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="space-y-3">
+          <button
+            onclick="importFromClipboard()"
+            class="w-full py-4 bg-stone-100 rounded-2xl text-stone-600 font-bold text-sm hover:bg-stone-200 flex items-center justify-center gap-3 border border-stone-200 btn-press"
+          >
+            <i class="fa-regular fa-clipboard text-lg"></i> 貼上備份碼還原
+          </button>
+          <button
+            onclick="document.getElementById('file-upload').click()"
+            class="w-full py-4 bg-white border-2 border-dashed border-stone-200 rounded-2xl text-stone-400 font-bold text-sm hover:bg-stone-50 flex items-center justify-center gap-2 btn-press"
+          >
+            <i class="fa-solid fa-file-import"></i> 上傳備份檔 (.json)
+          </button>
+          <input
+            type="file"
+            id="file-upload"
+            accept=".json"
+            class="hidden"
+            onchange="importFile(this)"
+          />
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let items = JSON.parse(localStorage.getItem("shunmemo_items")) || [];
+      let settings = JSON.parse(localStorage.getItem("shunmemo_settings")) || {
+        showRate: true,
+        showTags: true,
+        theme: "auto",
+      };
+      let rates = { TWD: 1, JPY: 0.215, KRW: 0.024, USD: 32.1, EUR: 34.8 };
+      let currentFilter = "all";
+      let sortField = "date";
+      let sortDesc = true;
+      let currentTheme = {};
+      let itemToComplete = null;
+      let currentAddMode = "single";
+      let currentHomeCurrency = "JPY";
+      let currentTags = []; // Store selected tags
+      let isEditing = false;
+      let editId = null;
+
+      const seasons = {
+        spring: {
+          bg: "#fff0f5",
+          badge: "#f472b6",
+          btn: "bg-pink-400",
+          text: "text-pink-500",
+          name: "春分",
+        },
+        summer: {
+          bg: "#f0f9ff",
+          badge: "#38bdf8",
+          btn: "bg-sky-400",
+          text: "text-sky-500",
+          name: "大暑",
+        },
+        autumn: {
+          bg: "#fff7ed",
+          badge: "#fb923c",
+          btn: "bg-orange-400",
+          text: "text-orange-500",
+          name: "立秋",
+        },
+        winter: {
+          bg: "#f8fafc",
+          badge: "#94a3b8",
+          btn: "bg-slate-400",
+          text: "text-slate-500",
+          name: "大寒",
+        },
+      };
+
+      // Custom Themes
+      const customThemes = {
+        pink: {
+          bg: "#ffe4e6",
+          badge: "#fb7185",
+          btn: "bg-rose-400",
+          name: "櫻花",
+        },
+        green: {
+          bg: "#ecfccb",
+          badge: "#84cc16",
+          btn: "bg-lime-500",
+          name: "抹茶",
+        },
+        blue: {
+          bg: "#e0f2fe",
+          badge: "#0ea5e9",
+          btn: "bg-sky-500",
+          name: "海洋",
+        },
+        black: {
+          bg: "#f5f5f4",
+          badge: "#57534e",
+          btn: "bg-stone-700",
+          name: "極簡",
+        },
+      };
+
+      document.addEventListener("DOMContentLoaded", init);
+
+      function init() {
+        applyTheme();
+        fetchRates();
+        loadSettings();
+        renderList();
+        document
+          .getElementById("input-price")
+          .addEventListener("input", updatePriceCalc);
+        window.onclick = (e) => {
+          if (e.target.classList.contains("modal-backdrop"))
+            closeModal(e.target.id);
+          if (
+            !e.target.closest("#currency-trigger") &&
+            !e.target.closest("#currency-picker")
+          ) {
+            document.getElementById("currency-picker").classList.add("hidden");
+            const arrow = document.getElementById("curr-arrow");
+            if (arrow) arrow.style.transform = "rotate(0deg)";
+          }
+          if (
+            !e.target.closest("#home-rate-btn") &&
+            !e.target.closest("#home-rate-picker")
+          ) {
+            document.getElementById("home-rate-picker").classList.add("hidden");
+          }
+        };
+      }
+
+      // --- Theme Logic ---
+      function setTheme(t) {
+        settings.theme = t;
+        saveSettings();
+        applyTheme();
+        // Visual feedback in settings
+        document.querySelectorAll(".theme-btn").forEach((btn) => {
+          if (btn.textContent === "自動" && t === "auto")
+            btn.classList.add("ring-2", "ring-stone-400");
+          else if (btn.onclick.toString().includes(t))
+            btn.classList.add("ring-2", "ring-stone-400");
+          else btn.classList.remove("ring-2", "ring-stone-400");
+        });
+      }
+
+      function applyTheme() {
+        if (settings.theme === "auto" || !settings.theme) {
+          detectSeason();
+        } else {
+          const t = customThemes[settings.theme];
+          currentTheme = t;
+          document.body.style.backgroundColor = t.bg;
+          document.documentElement.style.setProperty("--bg-color", t.bg);
+          document.getElementById("season-badge").style.backgroundColor =
+            t.badge;
+          document.getElementById("season-badge").textContent = t.name;
+          applyThemeColors();
+        }
+      }
+
+      // --- Tag Logic (New) ---
+      function updateSmartTags() {
+        const cat = document.getElementById("input-category").value;
+        const container = document.getElementById("tag-suggestions");
+        container.innerHTML = "";
+        const tags = {
+          clothing: ["S", "M", "L", "XL", "白", "黑", "免稅", "試穿"],
+          cosmetic: ["#01", "自然色", "亮白", "保濕", "霧面", "囤貨", "免稅"],
+          food: ["辣味", "大包", "盒裝", "抹茶", "限定", "賞味期"],
+          electronics: ["電池", "220V", "保固", "免稅", "最新"],
+          drug: ["頭痛", "感冒", "止癢", "維他命", "液體"],
+          general: ["送禮", "自用", "可愛", "日本製", "免稅"],
+        };
+        (tags[cat] || tags.general).forEach((t) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "text-[10px] px-2.5 py-1.5 rounded-xl bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200 font-bold transition-colors";
+          btn.textContent = t;
+          btn.onclick = () => addTag(t);
+          container.appendChild(btn);
+        });
+      }
+
+      function addTag(t) {
+        if (!currentTags.includes(t)) {
+          currentTags.push(t);
+          renderSelectedTags();
+        }
+      }
+
+      function removeTag(t) {
+        currentTags = currentTags.filter((tag) => tag !== t);
+        renderSelectedTags();
+      }
+
+      function renderSelectedTags() {
+        const container = document.getElementById("selected-tags");
+        container.innerHTML = "";
+        currentTags.forEach((t) => {
+          const el = document.createElement("div");
+          el.className =
+            "inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-700 text-white text-[10px] font-bold animate-in fade-in zoom-in duration-200";
+          el.innerHTML = `${t} <button onclick="removeTag('${t}')"><i class="fa-solid fa-xmark text-[8px]"></i></button>`;
+          container.appendChild(el);
+        });
+      }
+
+      // --- Add Modal Currency Logic ---
+      function toggleCurrencyPicker() {
+        const picker = document.getElementById("currency-picker");
+        const arrow = document.getElementById("curr-arrow");
+        picker.classList.toggle("hidden");
+        arrow.style.transform = picker.classList.contains("hidden")
+          ? "rotate(0deg)"
+          : "rotate(180deg)";
+      }
+      function selectCurrency(code) {
+        document.getElementById("input-currency").value = code;
+        const flags = { JPY: "🇯🇵", KRW: "🇰🇷", USD: "🇺🇸", EUR: "🇪🇺", TWD: "🇹🇼" };
+        const suffixes = { JPY: "¥", KRW: "₩", USD: "$", EUR: "€", TWD: "NT$" };
+        document.getElementById("curr-flag").textContent = flags[code];
+        document.getElementById("curr-code").textContent = code;
+        document.getElementById("currency-suffix").textContent = suffixes[code];
+        toggleCurrencyPicker();
+        updatePriceCalc();
+      }
+
+      function detectSeason() {
+        const month = new Date().getMonth() + 1;
+        let season = "winter";
+        if (month >= 3 && month <= 5) season = "spring";
+        else if (month >= 6 && month <= 8) season = "summer";
+        else if (month >= 9 && month <= 11) season = "autumn";
+        currentTheme = seasons[season];
+        document.body.style.backgroundColor = currentTheme.bg;
+        document.documentElement.style.setProperty(
+          "--bg-color",
+          currentTheme.bg
+        );
+        document.getElementById("season-badge").style.backgroundColor =
+          currentTheme.badge;
+        document.getElementById("season-badge").textContent = `${
+          currentTheme.name
+        } · ${season.toUpperCase()}`;
+        applyThemeColors();
+      }
+
+      function applyThemeColors() {
+        const fab = document.getElementById("fab-btn");
+        fab.className = `absolute bottom-24 right-6 w-16 h-16 rounded-[24px] shadow-xl shadow-stone-200/50 text-white flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-90 z-30 btn-press border-4 border-white ${currentTheme.btn}`;
+        document.getElementById(
+          "add-btn"
+        ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${currentTheme.btn}`;
+        document.documentElement.style.setProperty(
+          "--checkbox-color",
+          currentTheme.badge
+        );
+        renderList();
+      }
+
+      function openSettings() {
+        document.getElementById("settings-modal").classList.add("open");
+        document.getElementById("toggle-tags").checked = settings.showTags;
+      }
+      function saveSettings() {
+        settings.showTags = document.getElementById("toggle-tags").checked;
+        localStorage.setItem("shunmemo_settings", JSON.stringify(settings));
+        applySettings();
+      }
+      function loadSettings() {
+        applySettings();
+      }
+      function applySettings() {
+        document.getElementById("smart-tags-container").style.display =
+          settings.showTags ? "block" : "none";
+      }
+
+      async function fetchRates() {
+        try {
+          const res = await fetch(
+            "https://api.exchangerate-api.com/v4/latest/TWD"
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const newRates = {};
+            for (let k in data.rates) newRates[k] = 1 / data.rates[k];
+            rates = { ...newRates, ...rates };
+            updateRateDisplay();
+            renderList(); // Re-calc after fetch
+          }
+        } catch (e) {}
+      }
+
+      function updateRateDisplay() {
+        const code = currentHomeCurrency;
+        const rate = rates[code] || 1;
+        document.getElementById("rate-ticker").textContent =
+          rate < 0.1 ? rate.toFixed(4) : rate.toFixed(3);
+      }
+
+      function switchAddMode(mode) {
+        currentAddMode = mode;
+        document
+          .getElementById("mode-single")
+          .classList.toggle("hidden", mode !== "single");
+        document
+          .getElementById("mode-batch")
+          .classList.toggle("hidden", mode !== "batch");
+        document
+          .getElementById("mode-batch")
+          .classList.toggle("flex", mode === "batch");
+        const btnSingle = document.getElementById("btn-mode-single");
+        const btnBatch = document.getElementById("btn-mode-batch");
+        if (mode === "single") {
+          btnSingle.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
+          btnBatch.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
+        } else {
+          btnBatch.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
+          btnSingle.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
+        }
+      }
+
+      function handleMainAction() {
+        if (currentAddMode === "single") addItem();
+        else addBatchItems();
+      }
+
+      function addBatchItems() {
+        const text = document.getElementById("batch-input").value.trim();
+        if (!text) return showToast("請輸入內容", "error");
+        const lines = text.split("\n");
+        const category = document.getElementById("batch-category").value;
+        const currency = document.getElementById("batch-currency").value;
+        const target = document.getElementById("batch-target").value;
+        let count = 0;
+
+        lines.forEach((line) => {
+          line = line.trim();
+          if (!line) return;
+
+          // Smart Regex: Find price (numbers with , or .)
+          // Looks for number at start or end of string
+          let price = 0;
+          let name = line;
+
+          const priceRegex = /[\$¥₩]?((\d{1,3}(,\d{3})*)|(\d+))(\.\d+)?/;
+          const match = line.match(priceRegex);
+
+          if (match) {
+            const numStr = match[0].replace(/[\$¥₩,]/g, "");
+            const val = parseFloat(numStr);
+            // If valid number and it's not the whole string (e.g. "500" is name?) - heuristic
+            if (!isNaN(val)) {
+              price = val;
+              name = line.replace(match[0], "").trim();
+            }
+          }
+
+          if (!name && price > 0) name = "未命名商品"; // Fallback
+
+          if (name) {
+            items.unshift({
+              id: Date.now() + Math.random(),
+              name: name,
+              category: category,
+              target: target,
+              price: price,
+              currency: currency,
+              note: "",
+              tags: [],
+              url: "",
+              img: null,
+              completed: false,
+              createdAt: Date.now(),
+            });
+            count++;
+          }
+        });
+        if (count > 0) {
+          saveData();
+          closeModal("add-modal");
+          renderList();
+          showToast(`成功加入 ${count} 樣商品！`);
+          document.getElementById("batch-input").value = "";
+          switchAddMode("single");
+        } else {
+          showToast("無法解析", "error");
+        }
+      }
+
+      function addItem() {
+        const name = document.getElementById("input-name").value.trim();
+        if (!name) return showToast("請輸入名稱", "error");
+
+        const category = document.getElementById("input-category").value;
+        const target = document.getElementById("input-target").value;
+        const price =
+          parseFloat(document.getElementById("input-price").value) || 0;
+        const currency = document.getElementById("input-currency").value;
+        const note = document.getElementById("input-note").value;
+        const url = document.getElementById("input-url").value;
+
+        if (isEditing && editId) {
+          // UPDATE Existing Item
+          const index = items.findIndex((i) => i.id === editId);
+          if (index !== -1) {
+            items[index] = {
+              ...items[index],
+              name,
+              category,
+              target,
+              price,
+              currency,
+              note,
+              tags: currentTags,
+              url,
+              img: tempImgBase64,
+            };
+            showToast("修改已儲存！");
+          }
+        } else {
+          // CREATE New Item
+          const newItem = {
+            id: Date.now(),
+            name,
+            category,
+            target,
+            price,
+            currency,
+            note,
+            tags: currentTags,
+            url,
+            img: tempImgBase64,
+            completed: false,
+            createdAt: Date.now(),
+          };
+          items.unshift(newItem);
+          showToast("已加入清單！");
+        }
+
+        saveData();
+        closeModal("add-modal");
+        renderList();
+        resetForm(); // Reset
+      }
+
+      function toggleItem(id) {
+        const item = items.find((i) => i.id === id);
+        if (!item) return;
+        if (!item.completed) {
+          itemToComplete = item;
+          document.getElementById("purchase-actual-price").value =
+            item.price || "";
+          document
+            .getElementById("purchase-img-preview")
+            .classList.add("hidden");
+          tempPurchaseImgBase64 = null;
+          document.getElementById("purchase-modal").classList.add("open");
+        } else {
+          item.completed = false;
+          item.completedAt = null;
+          saveData();
+          renderList();
+        }
+      }
+
+      // Helper to handle click from HTML string
+      function handleItemClick(id) {
+        const item = items.find((i) => i.id === id);
+        if (item) openEditModal(item);
+      }
+
+      function openEditModal(item) {
+        // Prevent opening if item is completed (optional)
+        // if (item.completed) return;
+
+        isEditing = true;
+        editId = item.id;
+
+        // 1. Fill Form Data
+        document.getElementById("input-name").value = item.name;
+        document.getElementById("input-price").value = item.price || "";
+        document.getElementById("input-note").value = item.note || "";
+        document.getElementById("input-url").value = item.url || "";
+        document.getElementById("input-category").value = item.category;
+
+        // 2. Update UI Components
+        selectCurrency(item.currency || "JPY");
+        setTarget(item.target || "self");
+
+        // 3. Restore Tags
+        currentTags = item.tags || [];
+        renderSelectedTags();
+
+        // 4. Restore Image
+        if (item.img) {
+          tempImgBase64 = item.img;
+          document.getElementById("img-preview").src = item.img;
+          document.getElementById("img-preview").classList.remove("hidden");
+          document.getElementById("camera-placeholder").classList.add("hidden");
+          document.getElementById("remove-img-btn").classList.remove("hidden");
+        } else {
+          // Reset image UI without clearing tempImgBase64 if it was null
+          tempImgBase64 = null;
+          document.getElementById("input-img").value = "";
+          document.getElementById("img-preview").classList.add("hidden");
+          document
+            .getElementById("camera-placeholder")
+            .classList.remove("hidden");
+          document.getElementById("remove-img-btn").classList.add("hidden");
+        }
+
+        // 5. Change Modal Text
+        document.querySelector("#add-modal h2").innerHTML = "✏️ 編輯商品";
+        document.getElementById("add-btn").innerHTML =
+          '<i class="fa-solid fa-floppy-disk"></i> 儲存修改';
+
+        // 6. Open Modal with Flag
+        openAddModal(true);
+      }
+
+      function confirmPurchase(detailed) {
+        if (!itemToComplete) return;
+        itemToComplete.completed = true;
+        itemToComplete.completedAt = Date.now();
+        if (detailed) {
+          const actual = parseFloat(
+            document.getElementById("purchase-actual-price").value
+          );
+          if (!isNaN(actual)) itemToComplete.actualPrice = actual;
+          if (tempPurchaseImgBase64)
+            itemToComplete.purchaseImg = tempPurchaseImgBase64;
+        }
+        saveData();
+        closeModal("purchase-modal");
+        renderList();
+        showToast("恭喜入手！🎉");
+        itemToComplete = null;
+      }
+
+      function renderList() {
+        let list = items;
+        if (currentFilter === "active")
+          list = items.filter((i) => !i.completed);
+        if (currentFilter === "completed")
+          list = items.filter((i) => i.completed);
+        list.sort((a, b) => {
+          let va = a[sortField],
+            vb = b[sortField];
+          if (sortField === "category") {
+            va = a.category;
+            vb = b.category;
+          }
+          if (va < vb) return sortDesc ? 1 : -1;
+          if (va > vb) return sortDesc ? -1 : 1;
+          return 0;
+        });
+        document
+          .getElementById("clean-btn-container")
+          .classList.toggle("hidden", currentFilter !== "completed");
+        ["all", "active", "completed"].forEach((k) => {
+          const btn = document.getElementById(`tab-${k}`);
+          btn.className =
+            k === currentFilter
+              ? `flex-1 py-2 rounded-xl text-xs font-bold text-white shadow-md transition-all ${currentTheme.btn}`
+              : `flex-1 py-2 rounded-xl text-xs font-bold text-stone-500 transition-all hover:bg-white`;
+        });
+        const sortIcon = document.getElementById("sort-btn").querySelector("i");
+        sortIcon.className = sortDesc
+          ? "fa-solid fa-arrow-down"
+          : "fa-solid fa-arrow-up";
+        const ul = document.getElementById("shopping-list");
+        ul.innerHTML = "";
+        const empty = document.getElementById("empty-state");
+        if (list.length === 0) {
+          empty.classList.remove("hidden");
+          empty.classList.add("flex");
+        } else {
+          empty.classList.add("hidden");
+          empty.classList.remove("flex");
+          list.forEach((item, index) => {
+            const li = document.createElement("li");
+            const isDone = item.completed;
+            const itemRate = rates[item.currency] || 1;
+            const estTwd = Math.round(item.price * itemRate);
+            let tagHtml = "";
+            if (item.target === "gift")
+              tagHtml += `<span class="ml-2 inline-flex items-center gap-0.5 bg-pink-100 text-pink-500 text-[10px] px-1.5 py-0.5 rounded-md font-bold"><i class="fa-solid fa-gift"></i> 送禮</span>`;
+            if (item.target === "proxy")
+              tagHtml += `<span class="ml-2 inline-flex items-center gap-0.5 bg-blue-100 text-blue-500 text-[10px] px-1.5 py-0.5 rounded-md font-bold"><i class="fa-solid fa-handshake-simple"></i> 代購</span>`;
+            // Render Chips
+            if (item.tags && item.tags.length > 0) {
+              tagHtml += `<div class="flex flex-wrap gap-1 mt-1">`;
+              item.tags.forEach(
+                (t) =>
+                  (tagHtml += `<span class="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded font-bold">#${t}</span>`)
+              );
+              tagHtml += `</div>`;
+            }
+
+            let priceHtml = "";
+            if (isDone && item.actualPrice) {
+              const actTwd = Math.round(item.actualPrice * itemRate);
+              priceHtml = `<div class="text-right flex flex-col items-end"><div class="text-[9px] text-stone-300 line-through mb-0.5 font-cute">${
+                item.currency
+              } ${
+                item.price
+              }</div><div class="text-sm font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100 font-cute">${
+                item.currency
+              } ${item.actualPrice.toLocaleString()}</div><div class="text-[10px] text-green-600 font-bold mt-1 bg-green-50/50 px-1 rounded font-cute">≈ NT$ ${actTwd.toLocaleString()}</div></div>`;
+            } else {
+              priceHtml = item.price
+                ? `<div class="text-right flex flex-col items-end"><div class="text-base font-black text-stone-700 leading-none font-cute">${
+                    item.currency
+                  } ${item.price.toLocaleString()}</div><div class="text-[10px] text-stone-400 font-bold mt-1 bg-stone-100 px-1.5 py-0.5 rounded-md font-cute">≈ NT$ ${estTwd.toLocaleString()}</div></div>`
+                : "";
+            }
+            let imgHtml = "";
+            const showImg =
+              isDone && item.purchaseImg ? item.purchaseImg : item.img;
+            if (showImg) {
+              imgHtml = `<img src="${showImg}" class="w-full h-full object-cover">`;
+            } else {
+              const catConfig = {
+                general: ["fa-gift", "bg-orange-100 text-orange-400"],
+                clothing: ["fa-shirt", "bg-blue-100 text-blue-400"],
+                cosmetic: [
+                  "fa-spray-can-sparkles",
+                  "bg-pink-100 text-pink-400",
+                ],
+                food: ["fa-cookie-bite", "bg-yellow-100 text-yellow-500"],
+                electronics: ["fa-camera", "bg-stone-200 text-stone-500"],
+                drug: ["fa-capsules", "bg-green-100 text-green-500"],
+              };
+              const [icon, colorClass] =
+                catConfig[item.category] || catConfig.general;
+              imgHtml = `<div class="w-full h-full flex items-center justify-center text-xl ${colorClass}"><i class="fa-solid ${icon}"></i></div>`;
+            }
+
+            li.className = `bg-white p-4 rounded-[24px] border border-stone-100/50 shadow-sm relative overflow-hidden transition-all fade-in-up ${
+              isDone
+                ? "opacity-60 grayscale-[0.5]"
+                : "hover:shadow-md hover:-translate-y-0.5"
+            }`;
+            li.style.animationDelay = `${index * 0.05}s`;
+
+            // Clickable logic
+            li.innerHTML = `
+                <div class="flex gap-4 items-center">
+                    <label class="cute-checkbox" style="${
+                      isDone
+                        ? `background-color:${currentTheme.badge};border-color:${currentTheme.badge}`
+                        : ""
+                    }" onclick="event.stopPropagation()">
+                        <input type="checkbox" class="hidden" ${
+                          isDone ? "checked" : ""
+                        } onchange="toggleItem(${item.id})">
+                    </label>
+                    <!-- FIX: Pass item ID directly to function, avoid inline object lookup issue -->
+                    <div class="flex-1 flex gap-4 items-center cursor-pointer" onclick="handleItemClick(${
+                      item.id
+                    })">
+                        <div class="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border border-stone-100 shadow-inner bg-stone-50">${imgHtml}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1"><h3 class="font-bold text-stone-700 text-sm leading-tight ${
+                                  isDone ? "strike-through" : ""
+                                } pt-1">${item.name}</h3>${tagHtml}</div>
+                                <button onclick="deleteItem(${
+                                  item.id
+                                }, event)" class="p-2 -mr-2 -mt-2 text-stone-200 hover:text-red-400 transition-colors flex-shrink-0"><i class="fa-solid fa-trash-can text-sm"></i></button>
+                            </div>
+                            <div class="flex justify-between items-end mt-2">
+                                <div class="flex flex-col gap-1 items-start">
+                                    ${
+                                      item.note
+                                        ? `<span class="text-[10px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded-lg max-w-[110px] truncate font-bold">${item.note}</span>`
+                                        : ""
+                                    }
+                                    ${
+                                      item.url
+                                        ? `<a href="${item.url}" target="_blank" onclick="event.stopPropagation()" class="text-[10px] text-blue-400 bg-blue-50 px-2 py-0.5 rounded-lg font-bold hover:bg-blue-100"><i class="fa-solid fa-link mr-1"></i>連結</a>`
+                                        : ""
+                                    }
+                                </div>
+                                ${priceHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            ul.appendChild(li);
+          });
+        }
+      }
+
+      // --- Helpers ---
+      let tempImgBase64 = null,
+        tempPurchaseImgBase64 = null;
+      function handleImage(input, previewId) {
+        if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas"),
+                ctx = canvas.getContext("2d");
+              const maxW = 600;
+              let w = img.width,
+                h = img.height;
+              if (w > maxW) {
+                h *= maxW / w;
+                w = maxW;
+              }
+              canvas.width = w;
+              canvas.height = h;
+              ctx.drawImage(img, 0, 0, w, h);
+              const base64 = canvas.toDataURL("image/jpeg", 0.6);
+              if (previewId === "img-preview") {
+                tempImgBase64 = base64;
+                document
+                  .getElementById("camera-placeholder")
+                  .classList.add("hidden");
+                document
+                  .getElementById("remove-img-btn")
+                  .classList.remove("hidden");
+              } else {
+                tempPurchaseImgBase64 = base64;
+              }
+              document.getElementById(previewId).src = base64;
+              document.getElementById(previewId).classList.remove("hidden");
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+      function removeImage(e) {
+        if (e) e.stopPropagation();
+        tempImgBase64 = null;
+        document.getElementById("input-img").value = "";
+        document.getElementById("img-preview").classList.add("hidden");
+        document
+          .getElementById("camera-placeholder")
+          .classList.remove("hidden");
+        document.getElementById("remove-img-btn").classList.add("hidden");
+      }
+      function updatePriceCalc() {
+        const val = parseFloat(document.getElementById("input-price").value);
+        const curr = document.getElementById("input-currency").value;
+        const disp = document.getElementById("price-calc");
+        const rate = rates[curr] || 1;
+        if (val) {
+          const twd = Math.round(val * rate);
+          disp.innerHTML = `<span class="text-stone-300 text-[10px] mr-1">匯率 ${rate.toFixed(
+            3
+          )}</span> 約 NT$ ${twd.toLocaleString()}`;
+        } else {
+          disp.textContent = "";
+        }
+      }
+      async function shareBackup() {
+        const data = JSON.stringify(items);
+        if (navigator.share) {
+          try {
+            const file = new File([data], "buymemo_backup.json", {
+              type: "text/plain",
+            });
+            await navigator.share({
+              title: "BuyMemo 備份",
+              text: data,
+              files: [file],
+            });
+            return;
+          } catch (err) {}
+        }
+        navigator.clipboard
+          .writeText(data)
+          .then(() => {
+            showToast("✅ 備份碼已複製");
+          })
+          .catch(() => showToast("❌ 複製失敗", "error"));
+      }
+      function copyLink() {
+        navigator.clipboard
+          .writeText(window.location.href)
+          .then(() => showToast("🔗 網址已複製"));
+      }
+      async function importFromClipboard() {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) parseAndLoad(text);
+          else showToast("剪貼簿是空的", "error");
+        } catch (err) {
+          showToast("無法讀取，請手動貼上", "error");
+        }
+      }
+      function importFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => parseAndLoad(e.target.result);
+        reader.readAsText(file);
+        input.value = "";
+      }
+      function parseAndLoad(jsonStr) {
+        try {
+          const data = JSON.parse(jsonStr);
+          if (Array.isArray(data)) {
+            if (confirm(`偵測到 ${data.length} 筆資料，確定要還原？`)) {
+              items = data;
+              saveData();
+              renderList();
+              closeModal("restore-modal");
+              showToast("✅ 還原成功！");
+            }
+          } else showToast("格式錯誤", "error");
+        } catch (e) {
+          showToast("資料損毀", "error");
+        }
+      }
+      function saveData() {
+        localStorage.setItem("shunmemo_items", JSON.stringify(items));
+      }
+      function setFilter(f) {
+        currentFilter = f;
+        renderList();
+      }
+      function setSortField(f) {
+        sortField = f;
+        renderList();
+      }
+      function toggleSortDirection() {
+        sortDesc = !sortDesc;
+        renderList();
+      }
+
+      function setTarget(t) {
+        document.getElementById("input-target").value = t;
+        const note = document.getElementById("input-note");
+        ["self", "gift", "proxy"].forEach((k) => {
+          const btn = document.getElementById(`target-${k}`);
+          if (k === t) {
+            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-600 bg-white shadow-sm border border-stone-100 transition-all flex items-center justify-center gap-1`;
+            if (t === "gift") {
+              btn.classList.add("text-pink-500", "bg-pink-50");
+              note.placeholder = "送給誰？什麼場合？";
+            } else if (t === "proxy") {
+              btn.classList.add("text-blue-500", "bg-blue-50");
+              note.placeholder = "幫誰買？規格是？";
+            } else {
+              note.placeholder = "備註";
+            }
+          } else {
+            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-400 hover:bg-white/50 transition-all flex items-center justify-center gap-1`;
+          }
+        });
+      }
+
+      function pasteUrl() {
+        navigator.clipboard.readText().then((text) => {
+          if (text) {
+            document.getElementById("input-url").value = text;
+            showToast("已貼上網址");
+          } else {
+            showToast("剪貼簿是空的", "error");
+          }
+        });
+      }
+
+      function openAddModal(isEdit = false) {
+        if (!isEdit) resetForm();
+        document.getElementById("add-modal").classList.add("open");
+        document.body.classList.add("modal-open");
+        updateSmartTags();
+        switchAddMode("single");
+      }
+      function resetForm() {
+        isEditing = false;
+        editId = null;
+        document.getElementById("input-name").value = "";
+        document.getElementById("input-price").value = "";
+        document.getElementById("input-note").value = "";
+        document.getElementById("input-url").value = "";
+        tempImgBase64 = null;
+        currentTags = [];
+        renderSelectedTags();
+        document.getElementById("img-preview").classList.add("hidden");
+        document
+          .getElementById("camera-placeholder")
+          .classList.remove("hidden");
+        document.getElementById("remove-img-btn").classList.add("hidden");
+        setTarget("self");
+        document.querySelector("#add-modal h2").innerHTML = "✨ 新增好物";
+        document.getElementById("add-btn").innerHTML =
+          '<i class="fa-solid fa-plus"></i> 加入清單';
+      }
+
+      function toggleHomeRatePicker() {
+        document.getElementById("home-rate-picker").classList.toggle("hidden");
+      }
+      function setHomeCurrency(code) {
+        currentHomeCurrency = code;
+        document.getElementById("base-currency-label").textContent = code;
+        toggleHomeRatePicker();
+        updateRateDisplay();
+        renderList();
+      }
+
+      function openRestoreModal() {
+        document.getElementById("restore-modal").classList.add("open");
+        document.body.classList.add("modal-open");
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+        document.body.classList.remove("modal-open");
+      }
+      function deleteItem(id, e) {
+        if (e) e.stopPropagation();
+        if (confirm("確定要刪除？")) {
+          items = items.filter((i) => i.id !== id);
+          saveData();
+          renderList();
+        }
+      }
+      function clearCompleted() {
+        if (confirm("確定清除完成項目？")) {
+          items = items.filter((i) => !i.completed);
+          saveData();
+          renderList();
+          showToast("已清除");
+        }
+      }
+      function showToast(msg, type = "success") {
+        const container = document.getElementById("toast-container");
+        const el = document.createElement("div");
+        const color =
+          type === "success"
+            ? "bg-white text-stone-700"
+            : "bg-red-50 text-red-500";
+        el.className = `${color} px-4 py-2 rounded-full shadow-lg border border-stone-100 text-xs font-bold transition-all transform translate-y-4 opacity-0 flex items-center gap-2`;
+        el.innerHTML =
+          (type === "success"
+            ? '<i class="fa-solid fa-check text-green-400"></i>'
+            : '<i class="fa-solid fa-circle-exclamation"></i>') + msg;
+        container.appendChild(el);
+        requestAnimationFrame(() => {
+          el.classList.remove("translate-y-4", "opacity-0");
+        });
+        setTimeout(() => {
+          el.classList.add("translate-y-4", "opacity-0");
+          setTimeout(() => el.remove(), 300);
+        }, 2000);
+      }
+    </script>
   </body>
 </html>
