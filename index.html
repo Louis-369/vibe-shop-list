@@ -1256,7 +1256,14 @@
           settings.showTags ? "block" : "none";
       }
 
+      // 找到原本的 fetchRates 函式，用這段新的覆蓋它
       async function fetchRates() {
+        // 1. 先渲染畫面 (使用預設/快取匯率)，不要等網路
+        // 這樣使用者會立刻看到 App，不會卡在 Loading
+        updateRateDisplay();
+        renderList();
+
+        // 2. 在背景偷偷去抓最新匯率
         try {
           const res = await fetch(
             "https://api.exchangerate-api.com/v4/latest/TWD"
@@ -1264,12 +1271,19 @@
           if (res.ok) {
             const data = await res.json();
             const newRates = {};
+            // 計算匯率 (因為 API 是 TWD based, 我們要反算)
             for (let k in data.rates) newRates[k] = 1 / data.rates[k];
+
+            // 更新全域匯率表
             rates = { ...newRates, ...rates };
+
+            // 3. 抓到了！再次更新畫面上的數字
             updateRateDisplay();
-            renderList(); // Re-calc after fetch
+            renderList();
           }
-        } catch (e) {}
+        } catch (e) {
+          console.log("Rate fetch failed, using offline defaults");
+        }
       }
 
       function updateRateDisplay() {
