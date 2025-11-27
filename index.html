@@ -1757,27 +1757,60 @@
           disp.textContent = "";
         }
       }
+      // 改良版備份函式：自動分流
       async function shareBackup() {
-        const data = JSON.stringify(items);
-        if (navigator.share) {
-          try {
-            const file = new File([data], "buymemo_backup.json", {
-              type: "text/plain",
-            });
-            await navigator.share({
-              title: "BuyMemo 備份",
-              text: data,
-              files: [file],
-            });
-            return;
-          } catch (err) {}
+        // 1. 詢問使用者要哪種備份
+        // 如果有照片，提示使用者文字備份會遺失照片
+        const hasImages = items.some((i) => i.img || i.purchaseImg);
+        let mode = "file"; // 預設下載檔案
+
+        if (
+          confirm(
+            `📦 選擇備份方式：\n\n[確定] = 下載完整檔案 (含照片，推薦)\n[取消] = 複製文字代碼 (不含照片，適合傳 LINE)`
+          )
+        ) {
+          mode = "file";
+        } else {
+          mode = "text";
         }
-        navigator.clipboard
-          .writeText(data)
-          .then(() => {
-            showToast("✅ 備份碼已複製");
-          })
-          .catch(() => showToast("❌ 複製失敗", "error"));
+
+        if (mode === "file") {
+          // --- 模式 A: 完整檔案下載 ---
+          const data = JSON.stringify(items);
+          const blob = new Blob([data], { type: "application/json" });
+          const url = URL.createObjectURL(blob);
+
+          // 建立隱藏下載連結
+          const a = document.createElement("a");
+          a.href = url;
+          const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+          a.download = `buymemo_backup_${date}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          showToast("✅ 備份檔已下載");
+        } else {
+          // --- 模式 B: 純文字複製 (瘦身版) ---
+          // 複製一份 items，並把圖片欄位清空
+          const leanItems = items.map((item) => {
+            const { img, purchaseImg, ...rest } = item; // 移除 img 欄位
+            return rest;
+          });
+
+          const data = JSON.stringify(leanItems);
+
+          navigator.clipboard
+            .writeText(data)
+            .then(() => {
+              showToast(
+                hasImages
+                  ? "✅ 文字備份碼已複製 (照片已移除)"
+                  : "✅ 備份碼已複製"
+              );
+            })
+            .catch(() => showToast("❌ 複製失敗", "error"));
+        }
       }
       function copyLink() {
         navigator.clipboard
