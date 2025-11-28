@@ -26,7 +26,7 @@
     />
 
     <style>
-      /* --- Base Layout (iPhone Optimized) --- */
+      /* --- Base Layout --- */
       html,
       body {
         width: 100%;
@@ -34,9 +34,11 @@
         overflow: hidden;
         position: fixed;
         font-family: "Noto Sans TC", sans-serif;
-        background-color: var(--bg-color, #ffe4e6); /* CSS Variable for Theme */
+        background-color: var(--bg-color, #ffe4e6);
         transition: background-color 0.8s ease;
         -webkit-tap-highlight-color: transparent;
+        /* Prevent rubber banding on iOS */
+        overscroll-behavior-y: none;
       }
 
       /* Typography */
@@ -60,7 +62,12 @@
         border-radius: 4px;
       }
 
-      /* --- Input Improvements (Hide Spinners) --- */
+      /* --- Safe Area --- */
+      .pb-safe {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 20px);
+      }
+
+      /* --- Input Optimization --- */
       input[type="number"]::-webkit-inner-spin-button,
       input[type="number"]::-webkit-outer-spin-button {
         -webkit-appearance: none;
@@ -106,6 +113,38 @@
         transform: scale(1);
       }
 
+      /* --- Swipe Logic --- */
+      .swipe-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 20px;
+        /* Critical for ensuring vertical scroll still works while swiping horizontal */
+        touch-action: pan-y;
+      }
+
+      .swipe-action-bg {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding-right: 24px;
+        z-index: 0;
+      }
+
+      .swipe-content {
+        position: relative;
+        z-index: 10;
+        background: white;
+        width: 100%;
+        height: 100%;
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        will-change: transform;
+      }
+
       /* --- Animations --- */
       .strike-through {
         position: relative;
@@ -119,7 +158,7 @@
         left: 0;
         top: 50%;
         width: 100%;
-        height: 3px;
+        height: 2px;
         background: #cbd5e1;
         border-radius: 2px;
         transform: scaleX(0);
@@ -133,7 +172,7 @@
       }
 
       .fade-in-up {
-        animation: fadeInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        animation: fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         opacity: 0;
         transform: translateY(10px);
       }
@@ -143,6 +182,47 @@
           transform: translateY(0);
         }
       }
+
+      /* Plane Animation */
+      @keyframes flyRight {
+        0% {
+          transform: translate(0, 0);
+          opacity: 1;
+        }
+        100% {
+          transform: translate(180px, 0);
+          opacity: 0;
+        }
+      }
+      .plane-fly {
+        animation: flyRight 0.8s ease-in forwards;
+        display: inline-block;
+      }
+      .plane-trail {
+        position: absolute;
+        right: 100%;
+        top: 50%;
+        transform: translateY(-50%);
+        display: inline-block;
+        width: 0;
+        opacity: 1;
+        overflow: hidden;
+        white-space: nowrap;
+        font-family: monospace;
+        font-weight: bold;
+        color: #cbd5e1;
+        letter-spacing: -2px;
+        margin-right: 2px;
+      }
+      .trail-grow {
+        animation: growTrail 0.6s steps(12, end) forwards;
+      }
+      @keyframes growTrail {
+        to {
+          width: 80px;
+        }
+      }
+
       .btn-press {
         transition: transform 0.1s;
       }
@@ -155,13 +235,13 @@
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.3);
-        backdrop-filter: blur(8px);
+        backdrop-filter: blur(4px);
         z-index: 50;
         display: none;
         justify-content: center;
         opacity: 0;
-        transition: opacity 0.3s ease;
-        align-items: flex-end; /* Mobile: Bottom Sheet */
+        transition: opacity 0.25s ease;
+        align-items: flex-end;
       }
       @media (min-width: 640px) {
         .modal-backdrop {
@@ -178,9 +258,11 @@
         max-width: 450px;
         background: white;
         transform: translateY(100%);
-        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         border-radius: 32px 32px 0 0;
         max-height: 90dvh;
+        display: flex;
+        flex-direction: column;
       }
       @media (min-width: 640px) {
         .modal-content {
@@ -242,20 +324,40 @@
         pointer-events: none;
         display: none;
       }
-      /* --- FAB Animation --- */
-      #fab-btn {
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s,
-          bottom 0.3s;
-        /* 預設狀態 */
-        transform: scale(1) translateY(0);
-        opacity: 1;
-      }
 
-      /* 當加上 .hide class 時隱藏 */
-      #fab-btn.hide {
-        transform: scale(0.8) translateY(20px); /* 縮小並往下一點 */
-        opacity: 0.3; /* 變半透明 (如果您想完全消失改成 0) */
-        pointer-events: none; /* 避免誤觸 */
+      /* Guide Steps */
+      .guide-step {
+        position: relative;
+        padding-left: 24px;
+        margin-bottom: 12px;
+      }
+      .guide-step::before {
+        content: "";
+        position: absolute;
+        left: 8px;
+        top: 24px;
+        bottom: -12px;
+        width: 2px;
+        background: #f5f5f4;
+      }
+      .guide-step:last-child::before {
+        display: none;
+      }
+      .guide-num {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 18px;
+        height: 18px;
+        background: var(--theme-color, #fb7185);
+        color: white;
+        font-size: 10px;
+        font-weight: 900;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1;
       }
     </style>
   </head>
@@ -263,7 +365,7 @@
     <!-- Toast -->
     <div
       id="toast-container"
-      class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-none w-full max-w-xs flex flex-col items-center gap-2"
+      class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xs flex flex-col items-center gap-2 pointer-events-none"
     ></div>
 
     <!-- App Container -->
@@ -273,23 +375,23 @@
     >
       <!-- Header -->
       <header
-        class="flex-none pt-14 pb-4 px-6 bg-white/80 backdrop-blur-md border-b border-stone-100/50 sticky top-0 z-20"
+        class="flex-none pt-6 pb-4 px-6 bg-white/80 backdrop-blur-md border-b border-stone-100/50 sticky top-0 z-20"
       >
         <div class="flex justify-between items-start">
           <div>
             <div class="flex items-center gap-2 mb-1">
               <div
                 id="season-badge"
-                class="px-3 py-1 rounded-full text-[10px] font-black tracking-widest text-white bg-stone-400 shadow-sm"
+                class="px-2 py-0.5 rounded-full text-[9px] font-black tracking-widest text-white bg-stone-400 shadow-sm"
               >
                 LOADING...
               </div>
             </div>
             <h1
-              class="text-2xl font-black text-stone-700 tracking-tight drop-shadow-sm font-cute"
+              class="text-xl font-black text-stone-700 tracking-tight drop-shadow-sm font-cute"
             >
               ✈️ 世界口袋
-              <span class="text-stone-400 text-sm font-medium ml-1 font-cute"
+              <span class="text-stone-400 text-xs font-medium ml-1 font-cute"
                 >To Buy</span
               >
             </h1>
@@ -300,7 +402,7 @@
             <button
               onclick="toggleHomeRatePicker()"
               id="home-rate-btn"
-              class="bg-white/60 backdrop-blur px-3 py-1.5 rounded-xl border border-stone-100 shadow-sm flex flex-col items-end hover:bg-white transition-colors active:scale-95"
+              class="bg-white/60 backdrop-blur px-2.5 py-1 rounded-xl border border-stone-100 shadow-sm flex flex-col items-end hover:bg-white transition-colors active:scale-95"
             >
               <div
                 class="text-[9px] text-stone-400 font-bold mb-0.5 flex items-center gap-1"
@@ -310,7 +412,7 @@
               </div>
               <div
                 id="rate-ticker"
-                class="text-sm font-black text-stone-700 font-cute"
+                class="text-xs font-black text-stone-700 font-cute"
               >
                 ...
               </div>
@@ -350,8 +452,38 @@
           </div>
         </div>
 
+        <!-- Search Bar (Optimized for iOS) -->
+        <div class="mt-2 relative group z-10">
+          <div
+            class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
+          >
+            <i
+              class="fa-solid fa-magnifying-glass text-stone-300 text-sm group-focus-within:text-stone-500 transition-colors"
+            ></i>
+          </div>
+          <input
+            type="text"
+            id="search-input"
+            class="block w-full pl-10 pr-10 py-2 bg-stone-50 border-2 border-stone-100 rounded-2xl leading-5 placeholder-stone-300 text-stone-600 font-bold text-base focus:outline-none focus:bg-white focus:border-stone-300 focus:ring-4 focus:ring-stone-100 transition-all shadow-sm"
+            placeholder="搜尋商品 / 備註..."
+            oninput="setSearch(this.value)"
+          />
+          <button
+            id="search-clear"
+            onclick="clearSearch()"
+            class="absolute inset-y-0 right-0 pr-2 flex items-center hidden cursor-pointer transition-colors z-10"
+            type="button"
+          >
+            <div
+              class="w-8 h-8 flex items-center justify-center rounded-full text-stone-300 hover:text-stone-500 hover:bg-stone-200 transition-colors"
+            >
+              <i class="fa-solid fa-circle-xmark text-sm"></i>
+            </div>
+          </button>
+        </div>
+
         <!-- Controls -->
-        <div class="mt-5 flex items-center justify-between gap-2 h-10">
+        <div class="mt-2 flex items-center justify-between gap-2 h-10">
           <div class="flex bg-stone-100/80 p-1 rounded-2xl flex-1 h-full">
             <button
               onclick="setFilter('all')"
@@ -404,7 +536,7 @@
         </div>
 
         <!-- Clean Btn -->
-        <div id="clean-btn-container" class="hidden mt-3 w-full fade-in-up">
+        <div id="clean-btn-container" class="hidden mt-2 w-full fade-in-up">
           <button
             onclick="clearCompleted()"
             class="w-full py-2 bg-red-50 text-red-400 rounded-xl text-xs font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2 border border-red-100"
@@ -416,7 +548,7 @@
 
       <!-- List Area -->
       <div
-        class="flex-1 overflow-y-auto no-scrollbar p-4 pb-28 bg-stone-50/30 scroll-smooth"
+        class="flex-1 overflow-y-auto no-scrollbar p-3 pb-28 bg-stone-50/30 scroll-smooth"
         id="list-container"
       >
         <div
@@ -429,54 +561,119 @@
             <i class="fa-solid fa-basket-shopping text-4xl text-stone-200"></i>
           </div>
           <p class="text-xl font-bold text-stone-400">購物車是空的呦</p>
-          <p class="text-xs mt-2 opacity-70 bg-white/50 px-3 py-1 rounded-full">
-            按右下角 + 新增好物
-          </p>
+          <button
+            onclick="openAddModal()"
+            id="empty-add-btn"
+            class="mt-4 px-5 py-2 bg-stone-700 text-white rounded-full text-xs font-bold shadow-lg hover:scale-105 active:scale-95 transition-all"
+          >
+            <i class="fa-solid fa-plus mr-1"></i> 立即新增
+          </button>
         </div>
-        <ul id="shopping-list" class="space-y-4 pb-safe"></ul>
+        <ul id="shopping-list" class="space-y-3 pb-safe"></ul>
       </div>
 
-      <!-- Footer -->
+      <!-- Footer Nav -->
       <div
-        class="bg-white/90 backdrop-blur-md border-t border-stone-100 p-4 pb-8 z-10 flex justify-between items-center text-[10px] text-stone-400 font-bold absolute bottom-0 w-full"
+        class="bg-white/95 backdrop-blur-md border-t border-stone-100 pb-safe pt-2 px-4 z-40 flex justify-around items-end text-[9px] text-stone-400 font-bold absolute bottom-0 w-full h-[88px]"
       >
-        <div class="flex gap-2">
-          <button
-            onclick="shareBackup()"
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-stone-100 transition-colors btn-press"
-          >
-            <i class="fa-solid fa-share-nodes text-sm"></i> 備份
-          </button>
-        </div>
-        <div class="flex gap-2">
-          <button
-            onclick="openSettings()"
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-stone-100 transition-colors btn-press"
-          >
-            <i class="fa-solid fa-gear text-sm"></i> 設定
-          </button>
-          <button
-            onclick="openRestoreModal()"
-            class="flex items-center gap-1.5 px-3 py-2 rounded-xl hover:bg-stone-100 transition-colors btn-press"
-          >
-            <i class="fa-solid fa-clock-rotate-left text-sm"></i> 還原
-          </button>
-        </div>
-      </div>
+        <button
+          onclick="openGuideModal()"
+          class="flex-1 flex flex-col items-center gap-1 py-2 hover:text-stone-600 transition-colors"
+        >
+          <i class="fa-solid fa-book-open text-xl mb-0.5"></i> 指南
+        </button>
 
-      <!-- FAB -->
-      <button
-        onclick="openAddModal()"
-        id="fab-btn"
-        class="absolute bottom-24 right-6 w-16 h-16 rounded-[24px] shadow-xl shadow-stone-200/50 text-white flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-90 z-30 btn-press border-4 border-white"
-      >
-        <i class="fa-solid fa-plus"></i>
-      </button>
+        <div class="relative w-20 flex justify-center -top-5">
+          <button
+            onclick="openAddModal()"
+            id="nav-add-btn"
+            class="w-14 h-14 rounded-full text-white shadow-lg shadow-stone-200 border-4 border-white flex items-center justify-center text-2xl z-50"
+          >
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+
+        <button
+          onclick="openSettings()"
+          class="flex-1 flex flex-col items-center gap-1 py-2 hover:text-stone-600 transition-colors"
+        >
+          <i class="fa-solid fa-gear text-xl mb-0.5"></i> 設定
+        </button>
+      </div>
+    </div>
+
+    <!-- Guide Modal -->
+    <div id="guide-modal" class="modal-backdrop p-6 z-[70]">
+      <div class="modal-content p-6 overflow-y-auto custom-scrollbar">
+        <div
+          class="flex justify-between items-center mb-6 sticky top-0 bg-white z-10 pb-2 border-b border-stone-50"
+        >
+          <h3 class="font-black text-stone-700 text-lg flex items-center gap-2">
+            <i class="fa-solid fa-book-open-reader text-stone-400"></i> 使用指南
+          </h3>
+        </div>
+        <div class="space-y-6 pb-4">
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">🛒 購物前準備</h4>
+            <div class="guide-step">
+              <div class="guide-num">1</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                新增清單：點擊下方
+                <i
+                  class="fa-solid fa-plus text-[10px] bg-stone-200 px-1 rounded"
+                ></i>
+                按鈕。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">2</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                匯率設定：首頁上方可切換主要幣別。
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">🛍️ 購物中</h4>
+            <div class="guide-step">
+              <div class="guide-num">3</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                商品打勾：點擊商品左側圓圈，可輸入實際價格。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">4</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                左滑刪除：向左滑動商品卡片，會出現紅色刪除按鈕，點擊確認刪除。
+              </p>
+            </div>
+          </div>
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">📦 回國後</h4>
+            <div class="guide-step">
+              <div class="guide-num">5</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                備份資料：點擊「設定」中的「資料管理」按鈕。
+              </p>
+            </div>
+          </div>
+        </div>
+        <button
+          onclick="closeGuideWithAnimation()"
+          id="guide-close-btn"
+          class="w-full mt-6 py-3.5 bg-stone-800 text-white rounded-2xl text-xs font-bold shadow-md hover:bg-stone-700 transition-colors btn-press flex items-center justify-center gap-2 overflow-hidden"
+        >
+          <span>祝您買得開心！</span>
+          <div class="relative flex items-center">
+            <span id="guide-plane-trail" class="plane-trail">------------</span>
+            <i id="guide-plane-icon" class="fa-solid fa-plane"></i>
+          </div>
+        </button>
+      </div>
     </div>
 
     <!-- Add Modal -->
-    <div id="add-modal" class="modal-backdrop">
-      <div class="modal-content flex flex-col">
+    <div id="add-modal" class="modal-backdrop z-[60]">
+      <div class="modal-content flex flex-col h-full">
         <div
           class="p-4 border-b border-stone-100 flex justify-between items-center bg-stone-50/80 backdrop-blur sticky top-0 z-10"
         >
@@ -488,11 +685,11 @@
           <button
             onclick="closeModal('add-modal')"
             class="w-8 h-8 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center hover:bg-stone-200"
+            type="button"
           >
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
-        <!-- Mode Switcher -->
         <div class="px-5 pt-4 pb-2">
           <div class="flex bg-stone-100 p-1 rounded-xl">
             <button
@@ -511,7 +708,6 @@
             </button>
           </div>
         </div>
-        <!-- Form Body -->
         <div
           class="p-5 overflow-y-auto custom-scrollbar space-y-5 pb-10 flex-1"
           id="add-modal-body"
@@ -521,13 +717,13 @@
             <div class="w-full relative group">
               <div
                 onclick="document.getElementById('input-img').click()"
-                class="w-full h-40 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-stone-300 transition-all overflow-hidden relative"
+                class="w-full h-32 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200 flex flex-col items-center justify-center cursor-pointer hover:bg-white hover:border-stone-300 transition-all overflow-hidden relative"
               >
                 <div id="camera-placeholder" class="text-center">
                   <div
-                    class="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto mb-2 text-stone-300"
+                    class="w-10 h-10 bg-white rounded-2xl flex items-center justify-center shadow-sm mx-auto mb-2 text-stone-300"
                   >
-                    <i class="fa-solid fa-camera text-xl"></i>
+                    <i class="fa-solid fa-camera text-lg"></i>
                   </div>
                   <p class="text-[10px] font-bold text-stone-400">拍張照</p>
                 </div>
@@ -540,6 +736,7 @@
                 onclick="removeImage(event)"
                 id="remove-img-btn"
                 class="hidden absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur rounded-full shadow-md text-red-400 flex items-center justify-center z-10"
+                type="button"
               >
                 <i class="fa-solid fa-trash-can text-xs"></i>
               </button>
@@ -604,15 +801,17 @@
                     id="target-self"
                     class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-600 bg-white shadow-sm"
                   >
-                    自用</button
-                  ><button
+                    自用
+                  </button>
+                  <button
                     type="button"
                     onclick="setTarget('gift')"
                     id="target-gift"
                     class="flex-1 py-2 rounded-xl text-xs font-bold text-stone-400"
                   >
-                    送禮</button
-                  ><button
+                    送禮
+                  </button>
+                  <button
                     type="button"
                     onclick="setTarget('proxy')"
                     id="target-proxy"
@@ -647,7 +846,6 @@
                       id="curr-arrow"
                     ></i>
                   </button>
-                  <!-- No Negative Number -->
                   <input
                     type="number"
                     inputmode="decimal"
@@ -720,7 +918,6 @@
                 ></div>
               </div>
             </div>
-            <!-- Tags & Note -->
             <div
               class="bg-stone-50 p-4 rounded-3xl border border-stone-100"
               id="smart-tags-container"
@@ -730,17 +927,14 @@
                 ><i class="fa-solid fa-wand-magic-sparkles text-yellow-400"></i>
                 購物助手</label
               >
-              <!-- Selected Tags Area -->
               <div
                 id="selected-tags"
                 class="flex flex-wrap gap-1.5 mt-2 mb-2"
               ></div>
-              <!-- Tag Suggestions -->
               <div
                 id="tag-suggestions"
                 class="flex flex-wrap gap-2 mt-1 mb-3 min-h-[28px]"
               ></div>
-
               <textarea
                 id="input-note"
                 rows="2"
@@ -779,8 +973,8 @@
             </div>
             <div class="flex gap-2">
               <div class="w-1/3">
-                <label class="text-[10px] text-stone-400 ml-1">分類</label
-                ><select
+                <label class="text-[10px] text-stone-400 ml-1">分類</label>
+                <select
                   id="batch-category"
                   class="w-full mt-1 p-2 bg-stone-50 rounded-xl font-bold text-stone-600 text-xs border border-stone-200"
                 >
@@ -790,8 +984,8 @@
                 </select>
               </div>
               <div class="w-1/3">
-                <label class="text-[10px] text-stone-400 ml-1">幣別</label
-                ><select
+                <label class="text-[10px] text-stone-400 ml-1">幣別</label>
+                <select
                   id="batch-currency"
                   class="w-full mt-1 p-2 bg-stone-50 rounded-xl font-bold text-stone-600 text-xs border border-stone-200"
                 >
@@ -801,8 +995,8 @@
                 </select>
               </div>
               <div class="w-1/3">
-                <label class="text-[10px] text-stone-400 ml-1">用途</label
-                ><select
+                <label class="text-[10px] text-stone-400 ml-1">用途</label>
+                <select
                   id="batch-target"
                   class="w-full mt-1 p-2 bg-stone-50 rounded-xl font-bold text-stone-600 text-xs border border-stone-200"
                 >
@@ -827,26 +1021,24 @@
     </div>
 
     <!-- Settings Modal -->
-    <div
-      id="settings-modal"
-      class="modal-backdrop items-center justify-center p-6 z-[60]"
-    >
+    <div id="settings-modal" class="modal-backdrop z-[90]">
       <div
-        class="modal-content bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6"
+        class="modal-content bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6 relative"
       >
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex justify-between items-center mb-6 relative z-20">
           <h3 class="font-black text-stone-700 text-lg flex items-center gap-2">
             <i class="fa-solid fa-sliders"></i> 設定
           </h3>
+          <!-- FIXED CLOSE BUTTON -->
           <button
-            onclick="closeModal('settings-modal')"
-            class="w-8 h-8 rounded-full bg-stone-100 text-stone-300 hover:text-stone-500 flex items-center justify-center"
+            type="button"
+            onclick="event.stopPropagation(); closeModal('settings-modal')"
+            class="w-10 h-10 rounded-full bg-stone-100 text-stone-400 hover:bg-stone-200 hover:text-stone-600 flex items-center justify-center transition-colors cursor-pointer active:scale-95 absolute right-0 top-0 z-50"
           >
-            <i class="fa-solid fa-xmark"></i>
+            <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
-        <div class="space-y-6">
-          <!-- Theme Selector -->
+        <div class="space-y-6 relative z-10">
           <div>
             <div class="text-sm font-bold text-stone-700 mb-2">主題風格</div>
             <div class="flex gap-2">
@@ -879,29 +1071,61 @@
               <div class="text-sm font-bold text-stone-700">購物助手標籤</div>
               <div class="text-[10px] text-stone-400">顯示常用的規格選項</div>
             </div>
-            <label class="relative inline-flex items-center cursor-pointer"
-              ><input
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input
                 type="checkbox"
                 id="toggle-tags"
                 class="sr-only peer"
-                onchange="saveSettings()" />
+                onchange="saveSettings()"
+              />
               <div
                 class="w-11 h-6 bg-stone-200 rounded-full peer peer-checked:bg-green-400 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"
-              ></div
-            ></label>
+              ></div>
+            </label>
+          </div>
+
+          <div>
+            <div
+              class="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2"
+            >
+              <i class="fa-solid fa-server text-stone-300"></i> 資料管理
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <button
+                onclick="shareBackup(); closeModal('settings-modal')"
+                class="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-stone-50 border-2 border-stone-100 text-stone-500 hover:bg-white hover:border-stone-300 hover:shadow-md transition-all group active:scale-95"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-white border border-stone-100 flex items-center justify-center text-lg text-stone-400 group-hover:text-stone-600 group-hover:scale-110 transition-transform shadow-sm"
+                >
+                  <i class="fa-solid fa-file-export"></i>
+                </div>
+                <span class="text-xs font-bold">備份資料 (匯出)</span>
+              </button>
+              <button
+                onclick="openRestoreModal(); closeModal('settings-modal')"
+                class="flex flex-col items-center justify-center gap-2 py-4 rounded-2xl bg-stone-50 border-2 border-stone-100 text-stone-500 hover:bg-white hover:border-stone-300 hover:shadow-md transition-all group active:scale-95"
+              >
+                <div
+                  class="w-10 h-10 rounded-full bg-white border border-stone-100 flex items-center justify-center text-lg text-stone-400 group-hover:text-stone-600 group-hover:scale-110 transition-transform shadow-sm"
+                >
+                  <i class="fa-solid fa-file-import"></i>
+                </div>
+                <span class="text-xs font-bold">還原紀錄 (匯入)</span>
+              </button>
+            </div>
           </div>
         </div>
         <div class="mt-8 pt-4 border-t border-stone-100 text-center">
-          <p class="text-[10px] text-stone-300 font-bold">BuyMemo v3.0</p>
+          <p class="text-[10px] text-stone-300 font-bold">
+            BuyMemo v3.3 Refactored
+          </p>
         </div>
       </div>
     </div>
 
-    <!-- Purchase Modal (Same) -->
-    <div
-      id="purchase-modal"
-      class="modal-backdrop items-center justify-center p-6 z-50"
-    >
+    <!-- Purchase Modal -->
+    <div id="purchase-modal" class="modal-backdrop z-50">
       <div
         class="modal-content bg-white w-full max-w-sm rounded-[36px] shadow-2xl relative overflow-hidden"
       >
@@ -963,8 +1187,9 @@
               onclick="confirmPurchase(false)"
               class="py-3.5 rounded-2xl border-2 border-stone-100 text-stone-400 font-bold text-xs hover:bg-stone-50 btn-press"
             >
-              直接打勾</button
-            ><button
+              直接打勾
+            </button>
+            <button
               onclick="confirmPurchase(true)"
               class="py-3.5 rounded-2xl bg-green-400 text-white font-bold text-xs shadow-lg hover:bg-green-500 btn-press"
             >
@@ -975,11 +1200,31 @@
       </div>
     </div>
 
-    <!-- Restore Modal (Same) -->
+    <!-- Image Viewer Modal -->
     <div
-      id="restore-modal"
-      class="modal-backdrop items-center justify-center p-6 z-50"
+      id="image-viewer-modal"
+      class="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm hidden flex-col items-center justify-center opacity-0 transition-opacity duration-300"
+      onclick="closeImageViewer()"
     >
+      <div class="absolute top-4 right-4 z-10">
+        <button
+          onclick="closeImageViewer()"
+          class="w-10 h-10 bg-stone-800/50 text-white rounded-full flex items-center justify-center hover:bg-stone-700/80 transition-colors"
+        >
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
+      </div>
+      <img
+        id="full-size-image"
+        class="max-w-full max-h-[90vh] object-contain shadow-2xl scale-95 transition-transform duration-300"
+        src=""
+        alt="Full View"
+        onclick="event.stopPropagation()"
+      />
+    </div>
+
+    <!-- Restore Modal -->
+    <div id="restore-modal" class="modal-backdrop z-50">
       <div
         class="modal-content bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6"
       >
@@ -988,6 +1233,7 @@
           <button
             onclick="closeModal('restore-modal')"
             class="w-8 h-8 rounded-full bg-stone-100 text-stone-300 flex items-center justify-center"
+            type="button"
           >
             <i class="fa-solid fa-xmark"></i>
           </button>
@@ -1017,9 +1263,9 @@
     </div>
 
     <script>
+      // --- State & Data ---
       let items = JSON.parse(localStorage.getItem("shunmemo_items")) || [];
       let settings = JSON.parse(localStorage.getItem("shunmemo_settings")) || {
-        showRate: true,
         showTags: true,
         theme: "auto",
       };
@@ -1031,42 +1277,45 @@
       let itemToComplete = null;
       let currentAddMode = "single";
       let currentHomeCurrency = "JPY";
-      let currentTags = []; // Store selected tags
+      let currentTags = [];
       let isEditing = false;
       let editId = null;
+      let deletedItemBackup = null;
+      let searchQuery = "";
 
+      // Swipe State
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let currentSwipeId = null;
+      let isSwiping = false;
+
+      // Constants
       const seasons = {
         spring: {
           bg: "#fff0f5",
           badge: "#f472b6",
           btn: "bg-pink-400",
-          text: "text-pink-500",
           name: "春分",
         },
         summer: {
           bg: "#f0f9ff",
           badge: "#38bdf8",
           btn: "bg-sky-400",
-          text: "text-sky-500",
           name: "大暑",
         },
         autumn: {
           bg: "#fff7ed",
           badge: "#fb923c",
           btn: "bg-orange-400",
-          text: "text-orange-500",
           name: "立秋",
         },
         winter: {
           bg: "#f8fafc",
           badge: "#94a3b8",
           btn: "bg-slate-400",
-          text: "text-slate-500",
           name: "大寒",
         },
       };
-
-      // Custom Themes
       const customThemes = {
         pink: {
           bg: "#ffe4e6",
@@ -1094,19 +1343,18 @@
         },
       };
 
-      document.addEventListener("DOMContentLoaded", init);
-
-      function init() {
+      // --- Init ---
+      document.addEventListener("DOMContentLoaded", () => {
         applyTheme();
         fetchRates();
         loadSettings();
         renderList();
-        document
-          .getElementById("input-price")
-          .addEventListener("input", updatePriceCalc);
-        window.onclick = (e) => {
-          if (e.target.classList.contains("modal-backdrop"))
+
+        // Global click listeners for closing dropdowns
+        window.addEventListener("click", (e) => {
+          if (e.target.classList.contains("modal-backdrop")) {
             closeModal(e.target.id);
+          }
           if (
             !e.target.closest("#currency-trigger") &&
             !e.target.closest("#currency-picker")
@@ -1121,353 +1369,371 @@
           ) {
             document.getElementById("home-rate-picker").classList.add("hidden");
           }
-        };
-        // === 捲動時自動隱藏 FAB ===
-        const listContainer = document.getElementById("list-container");
-        const fab = document.getElementById("fab-btn");
-        let lastScrollTop = 0;
-        let scrollTimeout;
-
-        listContainer.addEventListener("scroll", () => {
-          const currentScroll = listContainer.scrollTop;
-
-          // 1. 正在捲動時 -> 隱藏
-          fab.classList.add("hide");
-
-          // 2. 停止捲動 0.5 秒後 -> 顯示
-          clearTimeout(scrollTimeout);
-          scrollTimeout = setTimeout(() => {
-            fab.classList.remove("hide");
-          }, 500); // 0.5秒後自動出現
-
-          lastScrollTop = currentScroll;
         });
-      }
 
-      // --- Theme Logic ---
-      function setTheme(t) {
-        settings.theme = t;
-        saveSettings();
-        applyTheme();
-        // Visual feedback in settings
-        document.querySelectorAll(".theme-btn").forEach((btn) => {
-          if (btn.textContent === "自動" && t === "auto")
-            btn.classList.add("ring-2", "ring-stone-400");
-          else if (btn.onclick.toString().includes(t))
-            btn.classList.add("ring-2", "ring-stone-400");
-          else btn.classList.remove("ring-2", "ring-stone-400");
-        });
-      }
+        document
+          .getElementById("input-price")
+          .addEventListener("input", updatePriceCalc);
+      });
 
-      function applyTheme() {
-        if (settings.theme === "auto" || !settings.theme) {
-          detectSeason();
-        } else {
-          const t = customThemes[settings.theme];
-          currentTheme = t;
-          document.body.style.backgroundColor = t.bg;
-          document.documentElement.style.setProperty("--bg-color", t.bg);
-          document.getElementById("season-badge").style.backgroundColor =
-            t.badge;
-          document.getElementById("season-badge").textContent = t.name;
-          applyThemeColors();
-        }
-      }
-
-      // --- Tag Logic (New) ---
-      function updateSmartTags() {
-        const cat = document.getElementById("input-category").value;
-        const container = document.getElementById("tag-suggestions");
-        container.innerHTML = "";
-        const tags = {
-          clothing: ["S", "M", "L", "XL", "白", "黑", "免稅", "試穿"],
-          cosmetic: ["#01", "自然色", "亮白", "保濕", "霧面", "囤貨", "免稅"],
-          food: ["辣味", "大包", "盒裝", "抹茶", "限定", "賞味期"],
-          electronics: ["電池", "220V", "保固", "免稅", "最新"],
-          drug: ["頭痛", "感冒", "止癢", "維他命", "液體"],
-          general: ["送禮", "自用", "可愛", "日本製", "免稅"],
-        };
-        (tags[cat] || tags.general).forEach((t) => {
-          const btn = document.createElement("button");
-          btn.className =
-            "text-[10px] px-2.5 py-1.5 rounded-xl bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200 font-bold transition-colors";
-          btn.textContent = t;
-          btn.onclick = () => addTag(t);
-          container.appendChild(btn);
-        });
-      }
-
-      function addTag(t) {
-        if (!currentTags.includes(t)) {
-          currentTags.push(t);
-          renderSelectedTags();
-        }
-      }
-
-      function removeTag(t) {
-        currentTags = currentTags.filter((tag) => tag !== t);
-        renderSelectedTags();
-      }
-
-      function renderSelectedTags() {
-        const container = document.getElementById("selected-tags");
-        container.innerHTML = "";
-        currentTags.forEach((t) => {
-          const el = document.createElement("div");
-          el.className =
-            "inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-700 text-white text-[10px] font-bold animate-in fade-in zoom-in duration-200";
-          el.innerHTML = `${t} <button onclick="removeTag('${t}')"><i class="fa-solid fa-xmark text-[8px]"></i></button>`;
-          container.appendChild(el);
-        });
-      }
-
-      // --- Add Modal Currency Logic ---
-      function toggleCurrencyPicker() {
-        const picker = document.getElementById("currency-picker");
-        const arrow = document.getElementById("curr-arrow");
-        picker.classList.toggle("hidden");
-        arrow.style.transform = picker.classList.contains("hidden")
-          ? "rotate(0deg)"
-          : "rotate(180deg)";
-      }
-      function selectCurrency(code) {
-        document.getElementById("input-currency").value = code;
-        const flags = { JPY: "🇯🇵", KRW: "🇰🇷", USD: "🇺🇸", EUR: "🇪🇺", TWD: "🇹🇼" };
-        const suffixes = { JPY: "¥", KRW: "₩", USD: "$", EUR: "€", TWD: "NT$" };
-        document.getElementById("curr-flag").textContent = flags[code];
-        document.getElementById("curr-code").textContent = code;
-        document.getElementById("currency-suffix").textContent = suffixes[code];
-        toggleCurrencyPicker();
-        updatePriceCalc();
-      }
-
-      function detectSeason() {
-        const month = new Date().getMonth() + 1;
-        let season = "winter";
-        if (month >= 3 && month <= 5) season = "spring";
-        else if (month >= 6 && month <= 8) season = "summer";
-        else if (month >= 9 && month <= 11) season = "autumn";
-        currentTheme = seasons[season];
-        document.body.style.backgroundColor = currentTheme.bg;
-        document.documentElement.style.setProperty(
-          "--bg-color",
-          currentTheme.bg
-        );
-        document.getElementById("season-badge").style.backgroundColor =
-          currentTheme.badge;
-        document.getElementById("season-badge").textContent = `${
-          currentTheme.name
-        } · ${season.toUpperCase()}`;
-        applyThemeColors();
-      }
-
-      function applyThemeColors() {
-        const fab = document.getElementById("fab-btn");
-        fab.className = `absolute bottom-24 right-6 w-16 h-16 rounded-[24px] shadow-xl shadow-stone-200/50 text-white flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-90 z-30 btn-press border-4 border-white ${currentTheme.btn}`;
-        document.getElementById(
-          "add-btn"
-        ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${currentTheme.btn}`;
-        document.documentElement.style.setProperty(
-          "--checkbox-color",
-          currentTheme.badge
-        );
-        renderList();
-      }
-
-      function openSettings() {
-        document.getElementById("settings-modal").classList.add("open");
-        document.getElementById("toggle-tags").checked = settings.showTags;
-      }
-      function saveSettings() {
-        settings.showTags = document.getElementById("toggle-tags").checked;
-        localStorage.setItem("shunmemo_settings", JSON.stringify(settings));
-        applySettings();
-      }
-      function loadSettings() {
-        applySettings();
-      }
-      function applySettings() {
-        document.getElementById("smart-tags-container").style.display =
-          settings.showTags ? "block" : "none";
-      }
-
-      // 找到原本的 fetchRates 函式，用這段新的覆蓋它
-      async function fetchRates() {
-        // 1. 先渲染畫面 (使用預設/快取匯率)，不要等網路
-        // 這樣使用者會立刻看到 App，不會卡在 Loading
-        updateRateDisplay();
-        renderList();
-
-        // 2. 在背景偷偷去抓最新匯率
-        try {
-          const res = await fetch(
-            "https://api.exchangerate-api.com/v4/latest/TWD"
+      // --- Core Functions ---
+      function renderList() {
+        // Filter
+        let list = items.filter((item) => {
+          if (!searchQuery) return true;
+          const term = searchQuery.toLowerCase();
+          return (
+            item.name.toLowerCase().includes(term) ||
+            (item.note && item.note.toLowerCase().includes(term))
           );
-          if (res.ok) {
-            const data = await res.json();
-            const newRates = {};
-            // 計算匯率 (因為 API 是 TWD based, 我們要反算)
-            for (let k in data.rates) newRates[k] = 1 / data.rates[k];
-
-            // 更新全域匯率表
-            rates = { ...newRates, ...rates };
-
-            // 3. 抓到了！再次更新畫面上的數字
-            updateRateDisplay();
-            renderList();
-          }
-        } catch (e) {
-          console.log("Rate fetch failed, using offline defaults");
-        }
-      }
-
-      function updateRateDisplay() {
-        const code = currentHomeCurrency;
-        const rate = rates[code] || 1;
-        document.getElementById("rate-ticker").textContent =
-          rate < 0.1 ? rate.toFixed(4) : rate.toFixed(3);
-      }
-
-      function switchAddMode(mode) {
-        currentAddMode = mode;
-        document
-          .getElementById("mode-single")
-          .classList.toggle("hidden", mode !== "single");
-        document
-          .getElementById("mode-batch")
-          .classList.toggle("hidden", mode !== "batch");
-        document
-          .getElementById("mode-batch")
-          .classList.toggle("flex", mode === "batch");
-        const btnSingle = document.getElementById("btn-mode-single");
-        const btnBatch = document.getElementById("btn-mode-batch");
-        if (mode === "single") {
-          btnSingle.className =
-            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
-          btnBatch.className =
-            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
-        } else {
-          btnBatch.className =
-            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
-          btnSingle.className =
-            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
-        }
-      }
-
-      function handleMainAction() {
-        if (currentAddMode === "single") addItem();
-        else addBatchItems();
-      }
-
-      function addBatchItems() {
-        const text = document.getElementById("batch-input").value.trim();
-        if (!text) return showToast("請輸入內容", "error");
-        const lines = text.split("\n");
-        const category = document.getElementById("batch-category").value;
-        const currency = document.getElementById("batch-currency").value;
-        const target = document.getElementById("batch-target").value;
-        let count = 0;
-
-        lines.forEach((line) => {
-          line = line.trim();
-          if (!line) return;
-
-          // Smart Regex: Find price (numbers with , or .)
-          // Looks for number at start or end of string
-          let price = 0;
-          let name = line;
-
-          const priceRegex = /[\$¥₩]?((\d{1,3}(,\d{3})*)|(\d+))(\.\d+)?/;
-          const match = line.match(priceRegex);
-
-          if (match) {
-            const numStr = match[0].replace(/[\$¥₩,]/g, "");
-            const val = parseFloat(numStr);
-            // If valid number and it's not the whole string (e.g. "500" is name?) - heuristic
-            if (!isNaN(val)) {
-              price = val;
-              name = line.replace(match[0], "").trim();
-            }
-          }
-
-          if (!name && price > 0) name = "未命名商品"; // Fallback
-
-          if (name) {
-            items.unshift({
-              id: Date.now() + Math.random(),
-              name: name,
-              category: category,
-              target: target,
-              price: price,
-              currency: currency,
-              note: "",
-              tags: [],
-              url: "",
-              img: null,
-              completed: false,
-              createdAt: Date.now(),
-            });
-            count++;
-          }
         });
-        if (count > 0) {
-          saveData();
-          closeModal("add-modal");
-          renderList();
-          showToast(`成功加入 ${count} 樣商品！`);
-          document.getElementById("batch-input").value = "";
-          switchAddMode("single");
+
+        // Update Counts
+        const countAll = list.length;
+        const countActive = list.filter((i) => !i.completed).length;
+        const countCompleted = list.filter((i) => i.completed).length;
+
+        document.getElementById(
+          "tab-all"
+        ).innerHTML = `全部 <span class="opacity-60 font-normal ml-0.5">(${items.length})</span>`;
+        document.getElementById(
+          "tab-active"
+        ).innerHTML = `購物中 <span class="opacity-60 font-normal ml-0.5">(${
+          items.filter((i) => !i.completed).length
+        })</span>`;
+        document.getElementById(
+          "tab-completed"
+        ).innerHTML = `已入手 <span class="opacity-60 font-normal ml-0.5">(${
+          items.filter((i) => i.completed).length
+        })</span>`;
+
+        // Apply Tab Filter
+        if (currentFilter === "active") list = list.filter((i) => !i.completed);
+        if (currentFilter === "completed")
+          list = list.filter((i) => i.completed);
+
+        // Sort
+        list.sort((a, b) => {
+          let va = a[sortField],
+            vb = b[sortField];
+          if (sortField === "category") {
+            va = a.category;
+            vb = b.category;
+          }
+          if (va < vb) return sortDesc ? 1 : -1;
+          if (va > vb) return sortDesc ? -1 : 1;
+          return 0;
+        });
+
+        // UI State
+        const ul = document.getElementById("shopping-list");
+        ul.innerHTML = "";
+        const empty = document.getElementById("empty-state");
+        const cleanBtn = document.getElementById("clean-btn-container");
+
+        cleanBtn.classList.toggle("hidden", currentFilter !== "completed");
+        document.getElementById("sort-btn").innerHTML = sortDesc
+          ? '<i class="fa-solid fa-arrow-down"></i>'
+          : '<i class="fa-solid fa-arrow-up"></i>';
+
+        // Update Tabs Style
+        ["all", "active", "completed"].forEach((k) => {
+          const btn = document.getElementById(`tab-${k}`);
+          const isActive = k === currentFilter;
+          btn.className = isActive
+            ? `flex-1 py-2 rounded-xl text-xs font-bold text-white shadow-md transition-all flex items-center justify-center gap-1 ${currentTheme.btn}`
+            : `flex-1 py-2 rounded-xl text-xs font-bold text-stone-500 transition-all hover:bg-white flex items-center justify-center gap-1`;
+        });
+
+        if (list.length === 0) {
+          empty.classList.remove("hidden");
+          empty.classList.add("flex");
+          if (searchQuery) {
+            empty.querySelector("p").textContent = "找不到相關商品";
+            document.getElementById("empty-add-btn").classList.add("hidden");
+          } else {
+            empty.querySelector("p").textContent = "購物車是空的呦";
+            document.getElementById("empty-add-btn").classList.remove("hidden");
+          }
         } else {
-          showToast("無法解析", "error");
+          empty.classList.add("hidden");
+          empty.classList.remove("flex");
+
+          list.forEach((item, index) => {
+            const li = document.createElement("li");
+            const isDone = item.completed;
+            const itemRate = rates[item.currency] || 1;
+            const estTwd = Math.round(item.price * itemRate);
+
+            // Generate Content
+            let tagsArr = [];
+            if (item.target === "gift")
+              tagsArr.push(
+                `<span class="inline-flex items-center gap-0.5 text-pink-500 text-[10px] font-black"><i class="fa-solid fa-gift"></i> 送禮</span>`
+              );
+            if (item.target === "proxy")
+              tagsArr.push(
+                `<span class="inline-flex items-center gap-0.5 text-blue-500 text-[10px] font-black"><i class="fa-solid fa-handshake-simple"></i> 代購</span>`
+              );
+            if (item.tags)
+              item.tags.forEach((t) =>
+                tagsArr.push(
+                  `<span class="text-[10px] text-stone-400 font-bold">#${t}</span>`
+                )
+              );
+            const tagHtml = tagsArr.join(" ");
+
+            let contentHtml = "";
+            if (item.note)
+              contentHtml += `<p class="text-[12px] text-stone-500 font-medium leading-snug break-all whitespace-pre-wrap mb-1">${item.note}</p>`;
+            if (item.url)
+              contentHtml += `<a href="${item.url}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1 text-[10px] text-blue-500 bg-blue-50 px-2 py-1 rounded-lg font-bold hover:bg-blue-100 mb-1"><i class="fa-solid fa-link text-[9px]"></i> 連結</a>`;
+
+            // Price HTML
+            let priceHtml = "";
+            if (isDone && item.actualPrice) {
+              const actTwd = Math.round(item.actualPrice * itemRate);
+              priceHtml = `<div class="text-right flex flex-col items-end leading-none">
+                  <div class="text-base font-black text-green-500 font-cute mb-0.5">
+                     <span class="text-[9px] opacity-50 mr-1 strike-through decoration-stone-300 text-stone-400 font-normal">${
+                       item.currency
+                     } ${item.price}</span>
+                     ${item.currency} ${item.actualPrice.toLocaleString()}
+                  </div>
+                  <div class="text-[9px] text-green-600/70 font-bold font-cute">≈ NT$ ${actTwd.toLocaleString()}</div>
+               </div>`;
+            } else {
+              priceHtml = item.price
+                ? `<div class="text-right flex flex-col items-end leading-none">
+                  <div class="text-base font-black text-stone-700 font-cute mb-0.5">${
+                    item.currency
+                  } ${item.price.toLocaleString()}</div>
+                  <div class="text-[9px] text-stone-400 font-bold font-cute">≈ NT$ ${estTwd.toLocaleString()}</div>
+               </div>`
+                : "";
+            }
+
+            // Image
+            let imgHtml = "";
+            let imgClickAttr = "";
+            const showImg =
+              isDone && item.purchaseImg ? item.purchaseImg : item.img;
+
+            if (showImg) {
+              imgHtml = `<img src="${showImg}" class="w-full h-full object-cover">`;
+              // Open Image Viewer logic
+              imgClickAttr = `onclick="event.stopPropagation(); openImageViewer('${showImg}')"`;
+            } else {
+              const catConfig = {
+                general: ["fa-gift", "bg-orange-100 text-orange-400"],
+                clothing: ["fa-shirt", "bg-blue-100 text-blue-400"],
+                cosmetic: [
+                  "fa-spray-can-sparkles",
+                  "bg-pink-100 text-pink-400",
+                ],
+                food: ["fa-cookie-bite", "bg-yellow-100 text-yellow-500"],
+                electronics: ["fa-camera", "bg-stone-200 text-stone-500"],
+                drug: ["fa-capsules", "bg-green-100 text-green-500"],
+              };
+              const [icon, colorClass] =
+                catConfig[item.category] || catConfig.general;
+              imgHtml = `<div class="w-full h-full flex items-center justify-center text-xl ${colorClass}"><i class="fa-solid ${icon}"></i></div>`;
+              // Default logic (Open Edit)
+              imgClickAttr = `onclick="handleClickItem(${item.id})"`;
+            }
+
+            li.className = `swipe-container fade-in-up select-none shadow-sm mb-2 ${
+              isDone ? "opacity-60 grayscale-[0.5]" : ""
+            }`;
+            li.style.animationDelay = `${index * 0.05}s`;
+
+            li.innerHTML = `
+               <div class="swipe-action-bg bg-red-500 text-white cursor-pointer" onclick="deleteItem(${
+                 item.id
+               }, event)">
+                  <div class="flex flex-col items-center gap-1 pl-6 font-bold text-[10px]">
+                     <i class="fa-solid fa-trash-can text-lg"></i> 刪除
+                  </div>
+               </div>
+               
+               <div 
+                  id="item-fg-${item.id}"
+                  class="swipe-content bg-white p-3 flex gap-2 items-start"
+                  ontouchstart="handleTouchStart(event, ${item.id})"
+                  ontouchmove="handleTouchMove(event, ${item.id})"
+                  ontouchend="handleTouchEnd(event, ${item.id})"
+               >
+                  <label class="cute-checkbox mt-0.5" style="${
+                    isDone
+                      ? `background-color:${currentTheme.badge};border-color:${currentTheme.badge}`
+                      : ""
+                  }" onclick="event.stopPropagation()">
+                     <input type="checkbox" class="hidden" ${
+                       isDone ? "checked" : ""
+                     } onchange="toggleItem(${item.id})">
+                  </label>
+                  
+                  <div class="flex-1 flex gap-2 items-start min-w-0">
+                     <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-stone-100 shadow-inner bg-stone-50 cursor-pointer relative group active:scale-95 transition-transform" ${imgClickAttr}>
+                        ${imgHtml}
+                     </div>
+                     <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="handleClickItem(${
+                       item.id
+                     })">
+                        <h3 class="font-black text-stone-700 text-sm leading-tight ${
+                          isDone ? "strike-through" : ""
+                        } mb-1 line-clamp-2">${item.name}</h3>
+                        ${contentHtml}
+                        <div class="mt-auto flex justify-between items-end gap-2 pt-1">
+                           <div class="flex-1 flex flex-wrap content-end gap-1">${tagHtml}</div>
+                           ${priceHtml}
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            `;
+            ul.appendChild(li);
+          });
         }
       }
 
+      // --- Swipe Logic (Refined) ---
+      function handleTouchStart(e, id) {
+        if (currentSwipeId !== null && currentSwipeId !== id)
+          resetSwipe(currentSwipeId);
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isSwiping = false;
+      }
+      function handleTouchMove(e, id) {
+        const dx = e.touches[0].clientX - touchStartX;
+        const dy = e.touches[0].clientY - touchStartY;
+
+        // Horizontal dominance check
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
+          isSwiping = true;
+          // Prevent scroll only when swiping horizontally
+          if (e.cancelable) e.preventDefault();
+
+          const el = document.getElementById(`item-fg-${id}`);
+          if (!el) return;
+
+          // Only allow dragging left (negative dx)
+          let tx = dx;
+          if (tx > 0) tx = 0;
+          if (tx < -100) tx = -100; // Resistance limit
+
+          el.style.transition = "none";
+          el.style.transform = `translateX(${tx}px)`;
+        }
+      }
+      function handleTouchEnd(e, id) {
+        if (!isSwiping) return;
+
+        const el = document.getElementById(`item-fg-${id}`);
+        const dx = e.changedTouches[0].clientX - touchStartX;
+
+        el.style.transition = "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)";
+
+        // Snap threshold (-40px)
+        if (dx < -40) {
+          el.style.transform = `translateX(-80px)`; // Reveal delete
+          currentSwipeId = id;
+        } else {
+          el.style.transform = `translateX(0)`;
+          currentSwipeId = null;
+        }
+        isSwiping = false;
+      }
+      function resetSwipe(id) {
+        const el = document.getElementById(`item-fg-${id}`);
+        if (el) {
+          el.style.transition = "transform 0.2s ease";
+          el.style.transform = `translateX(0)`;
+        }
+        if (currentSwipeId === id) currentSwipeId = null;
+      }
+
+      // Only trigger edit if NOT swiping (click integrity)
+      function handleClickItem(id) {
+        if (currentSwipeId === id) {
+          resetSwipe(id); // Close swipe on click
+          return;
+        }
+        const item = items.find((i) => i.id === id);
+        if (item) openEditModal(item);
+      }
+
+      // --- Modals & Actions ---
+      function openAddModal(isEdit = false) {
+        if (!isEdit) resetForm();
+        document.getElementById("add-modal").classList.add("open");
+        updateSmartTags();
+        switchAddMode("single");
+      }
+      function openEditModal(item) {
+        isEditing = true;
+        editId = item.id;
+        document.getElementById("input-name").value = item.name;
+        document.getElementById("input-price").value = item.price || "";
+        document.getElementById("input-note").value = item.note || "";
+        document.getElementById("input-url").value = item.url || "";
+        document.getElementById("input-category").value = item.category;
+        selectCurrency(item.currency || "JPY");
+        setTarget(item.target || "self");
+        currentTags = item.tags || [];
+        renderSelectedTags();
+
+        if (item.img) {
+          tempImgBase64 = item.img;
+          document.getElementById("img-preview").src = item.img;
+          document.getElementById("img-preview").classList.remove("hidden");
+          document.getElementById("camera-placeholder").classList.add("hidden");
+          document.getElementById("remove-img-btn").classList.remove("hidden");
+        } else {
+          tempImgBase64 = null;
+          document.getElementById("img-preview").classList.add("hidden");
+          document
+            .getElementById("camera-placeholder")
+            .classList.remove("hidden");
+          document.getElementById("remove-img-btn").classList.add("hidden");
+        }
+        document.querySelector("#add-modal h2").innerHTML = "✏️ 編輯商品";
+        document.getElementById("add-btn").innerHTML =
+          '<i class="fa-solid fa-floppy-disk"></i> 儲存修改';
+        openAddModal(true);
+      }
+      function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+      }
+
+      // --- CRUD & Logic ---
       function addItem() {
         const name = document.getElementById("input-name").value.trim();
         if (!name) return showToast("請輸入名稱", "error");
 
-        const category = document.getElementById("input-category").value;
-        const target = document.getElementById("input-target").value;
-        const price =
-          parseFloat(document.getElementById("input-price").value) || 0;
-        const currency = document.getElementById("input-currency").value;
-        const note = document.getElementById("input-note").value;
-        const url = document.getElementById("input-url").value;
+        const newItem = {
+          id: isEditing ? editId : Date.now(),
+          name,
+          category: document.getElementById("input-category").value,
+          target: document.getElementById("input-target").value,
+          price: parseFloat(document.getElementById("input-price").value) || 0,
+          currency: document.getElementById("input-currency").value,
+          note: document.getElementById("input-note").value,
+          url: document.getElementById("input-url").value,
+          tags: currentTags,
+          img: tempImgBase64,
+          completed: isEditing
+            ? items.find((i) => i.id === editId).completed
+            : false,
+          createdAt: Date.now(),
+        };
 
-        if (isEditing && editId) {
-          // UPDATE Existing Item
-          const index = items.findIndex((i) => i.id === editId);
-          if (index !== -1) {
-            items[index] = {
-              ...items[index],
-              name,
-              category,
-              target,
-              price,
-              currency,
-              note,
-              tags: currentTags,
-              url,
-              img: tempImgBase64,
-            };
-            showToast("修改已儲存！");
-          }
+        if (isEditing) {
+          const idx = items.findIndex((i) => i.id === editId);
+          if (idx !== -1) items[idx] = { ...items[idx], ...newItem };
+          showToast("修改已儲存！");
         } else {
-          // CREATE New Item
-          const newItem = {
-            id: Date.now(),
-            name,
-            category,
-            target,
-            price,
-            currency,
-            note,
-            tags: currentTags,
-            url,
-            img: tempImgBase64,
-            completed: false,
-            createdAt: Date.now(),
-          };
           items.unshift(newItem);
           showToast("已加入清單！");
         }
@@ -1475,7 +1741,33 @@
         saveData();
         closeModal("add-modal");
         renderList();
-        resetForm(); // Reset
+        resetForm();
+      }
+
+      function deleteItem(id, e) {
+        if (e) e.stopPropagation();
+        const idx = items.findIndex((i) => i.id === id);
+        if (idx === -1) return;
+
+        currentSwipeId = null; // Reset swipe state
+        deletedItemBackup = { item: items[idx], index: idx };
+        items.splice(idx, 1);
+        saveData();
+        renderList();
+        showToast(
+          `已刪除 <button onclick="undoDelete()" class="underline ml-2 font-black hover:text-stone-800 pointer-events-auto">復原</button>`,
+          "success",
+          4000
+        );
+      }
+
+      function undoDelete() {
+        if (!deletedItemBackup) return;
+        items.splice(deletedItemBackup.index, 0, deletedItemBackup.item);
+        saveData();
+        renderList();
+        deletedItemBackup = null;
+        showToast("已復原商品！");
       }
 
       function toggleItem(id) {
@@ -1492,71 +1784,14 @@
           document.getElementById("purchase-modal").classList.add("open");
         } else {
           item.completed = false;
-          item.completedAt = null;
           saveData();
           renderList();
         }
       }
 
-      // Helper to handle click from HTML string
-      function handleItemClick(id) {
-        const item = items.find((i) => i.id === id);
-        if (item) openEditModal(item);
-      }
-
-      function openEditModal(item) {
-        // Prevent opening if item is completed (optional)
-        // if (item.completed) return;
-
-        isEditing = true;
-        editId = item.id;
-
-        // 1. Fill Form Data
-        document.getElementById("input-name").value = item.name;
-        document.getElementById("input-price").value = item.price || "";
-        document.getElementById("input-note").value = item.note || "";
-        document.getElementById("input-url").value = item.url || "";
-        document.getElementById("input-category").value = item.category;
-
-        // 2. Update UI Components
-        selectCurrency(item.currency || "JPY");
-        setTarget(item.target || "self");
-
-        // 3. Restore Tags
-        currentTags = item.tags || [];
-        renderSelectedTags();
-
-        // 4. Restore Image
-        if (item.img) {
-          tempImgBase64 = item.img;
-          document.getElementById("img-preview").src = item.img;
-          document.getElementById("img-preview").classList.remove("hidden");
-          document.getElementById("camera-placeholder").classList.add("hidden");
-          document.getElementById("remove-img-btn").classList.remove("hidden");
-        } else {
-          // Reset image UI without clearing tempImgBase64 if it was null
-          tempImgBase64 = null;
-          document.getElementById("input-img").value = "";
-          document.getElementById("img-preview").classList.add("hidden");
-          document
-            .getElementById("camera-placeholder")
-            .classList.remove("hidden");
-          document.getElementById("remove-img-btn").classList.add("hidden");
-        }
-
-        // 5. Change Modal Text
-        document.querySelector("#add-modal h2").innerHTML = "✏️ 編輯商品";
-        document.getElementById("add-btn").innerHTML =
-          '<i class="fa-solid fa-floppy-disk"></i> 儲存修改';
-
-        // 6. Open Modal with Flag
-        openAddModal(true);
-      }
-
       function confirmPurchase(detailed) {
         if (!itemToComplete) return;
         itemToComplete.completed = true;
-        itemToComplete.completedAt = Date.now();
         if (detailed) {
           const actual = parseFloat(
             document.getElementById("purchase-actual-price").value
@@ -1572,375 +1807,20 @@
         itemToComplete = null;
       }
 
-      function renderList() {
-        let list = items;
-        if (currentFilter === "active")
-          list = items.filter((i) => !i.completed);
-        if (currentFilter === "completed")
-          list = items.filter((i) => i.completed);
-        list.sort((a, b) => {
-          let va = a[sortField],
-            vb = b[sortField];
-          if (sortField === "category") {
-            va = a.category;
-            vb = b.category;
-          }
-          if (va < vb) return sortDesc ? 1 : -1;
-          if (va > vb) return sortDesc ? -1 : 1;
-          return 0;
-        });
+      // --- Search ---
+      function setSearch(val) {
+        searchQuery = val.trim();
         document
-          .getElementById("clean-btn-container")
-          .classList.toggle("hidden", currentFilter !== "completed");
-        ["all", "active", "completed"].forEach((k) => {
-          const btn = document.getElementById(`tab-${k}`);
-          btn.className =
-            k === currentFilter
-              ? `flex-1 py-2 rounded-xl text-xs font-bold text-white shadow-md transition-all ${currentTheme.btn}`
-              : `flex-1 py-2 rounded-xl text-xs font-bold text-stone-500 transition-all hover:bg-white`;
-        });
-        const sortIcon = document.getElementById("sort-btn").querySelector("i");
-        sortIcon.className = sortDesc
-          ? "fa-solid fa-arrow-down"
-          : "fa-solid fa-arrow-up";
-        const ul = document.getElementById("shopping-list");
-        ul.innerHTML = "";
-        const empty = document.getElementById("empty-state");
-        if (list.length === 0) {
-          empty.classList.remove("hidden");
-          empty.classList.add("flex");
-        } else {
-          empty.classList.add("hidden");
-          empty.classList.remove("flex");
-          list.forEach((item, index) => {
-            const li = document.createElement("li");
-            const isDone = item.completed;
-            const itemRate = rates[item.currency] || 1;
-            const estTwd = Math.round(item.price * itemRate);
-            let tagHtml = "";
-            if (item.target === "gift")
-              tagHtml += `<span class="ml-2 inline-flex items-center gap-0.5 bg-pink-100 text-pink-500 text-[10px] px-1.5 py-0.5 rounded-md font-bold"><i class="fa-solid fa-gift"></i> 送禮</span>`;
-            if (item.target === "proxy")
-              tagHtml += `<span class="ml-2 inline-flex items-center gap-0.5 bg-blue-100 text-blue-500 text-[10px] px-1.5 py-0.5 rounded-md font-bold"><i class="fa-solid fa-handshake-simple"></i> 代購</span>`;
-            // Render Chips
-            if (item.tags && item.tags.length > 0) {
-              tagHtml += `<div class="flex flex-wrap gap-1 mt-1">`;
-              item.tags.forEach(
-                (t) =>
-                  (tagHtml += `<span class="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded font-bold">#${t}</span>`)
-              );
-              tagHtml += `</div>`;
-            }
-
-            let priceHtml = "";
-            if (isDone && item.actualPrice) {
-              const actTwd = Math.round(item.actualPrice * itemRate);
-              priceHtml = `<div class="text-right flex flex-col items-end"><div class="text-[9px] text-stone-300 line-through mb-0.5 font-cute">${
-                item.currency
-              } ${
-                item.price
-              }</div><div class="text-sm font-black text-green-500 bg-green-50 px-2 py-0.5 rounded-lg border border-green-100 font-cute">${
-                item.currency
-              } ${item.actualPrice.toLocaleString()}</div><div class="text-[10px] text-green-600 font-bold mt-1 bg-green-50/50 px-1 rounded font-cute">≈ NT$ ${actTwd.toLocaleString()}</div></div>`;
-            } else {
-              priceHtml = item.price
-                ? `<div class="text-right flex flex-col items-end"><div class="text-base font-black text-stone-700 leading-none font-cute">${
-                    item.currency
-                  } ${item.price.toLocaleString()}</div><div class="text-[10px] text-stone-400 font-bold mt-1 bg-stone-100 px-1.5 py-0.5 rounded-md font-cute">≈ NT$ ${estTwd.toLocaleString()}</div></div>`
-                : "";
-            }
-            let imgHtml = "";
-            const showImg =
-              isDone && item.purchaseImg ? item.purchaseImg : item.img;
-            if (showImg) {
-              imgHtml = `<img src="${showImg}" class="w-full h-full object-cover">`;
-            } else {
-              const catConfig = {
-                general: ["fa-gift", "bg-orange-100 text-orange-400"],
-                clothing: ["fa-shirt", "bg-blue-100 text-blue-400"],
-                cosmetic: [
-                  "fa-spray-can-sparkles",
-                  "bg-pink-100 text-pink-400",
-                ],
-                food: ["fa-cookie-bite", "bg-yellow-100 text-yellow-500"],
-                electronics: ["fa-camera", "bg-stone-200 text-stone-500"],
-                drug: ["fa-capsules", "bg-green-100 text-green-500"],
-              };
-              const [icon, colorClass] =
-                catConfig[item.category] || catConfig.general;
-              imgHtml = `<div class="w-full h-full flex items-center justify-center text-xl ${colorClass}"><i class="fa-solid ${icon}"></i></div>`;
-            }
-
-            li.className = `bg-white p-4 rounded-[24px] border border-stone-100/50 shadow-sm relative overflow-hidden transition-all fade-in-up ${
-              isDone
-                ? "opacity-60 grayscale-[0.5]"
-                : "hover:shadow-md hover:-translate-y-0.5"
-            }`;
-            li.style.animationDelay = `${index * 0.05}s`;
-
-            // Clickable logic
-            li.innerHTML = `
-                <div class="flex gap-4 items-center">
-                    <label class="cute-checkbox" style="${
-                      isDone
-                        ? `background-color:${currentTheme.badge};border-color:${currentTheme.badge}`
-                        : ""
-                    }" onclick="event.stopPropagation()">
-                        <input type="checkbox" class="hidden" ${
-                          isDone ? "checked" : ""
-                        } onchange="toggleItem(${item.id})">
-                    </label>
-                    <!-- FIX: Pass item ID directly to function, avoid inline object lookup issue -->
-                    <div class="flex-1 flex gap-4 items-center cursor-pointer" onclick="handleItemClick(${
-                      item.id
-                    })">
-                        <div class="w-16 h-16 rounded-2xl overflow-hidden flex-shrink-0 border border-stone-100 shadow-inner bg-stone-50">${imgHtml}</div>
-                        <div class="flex-1 min-w-0">
-                            <div class="flex justify-between items-start">
-                                <div class="flex-1"><h3 class="font-bold text-stone-700 text-sm leading-tight ${
-                                  isDone ? "strike-through" : ""
-                                } pt-1">${item.name}</h3>${tagHtml}</div>
-                                <button onclick="deleteItem(${
-                                  item.id
-                                }, event)" class="p-2 -mr-2 -mt-2 text-stone-200 hover:text-red-400 transition-colors flex-shrink-0"><i class="fa-solid fa-trash-can text-sm"></i></button>
-                            </div>
-                            <div class="flex justify-between items-end mt-2">
-                                <div class="flex flex-col gap-1 items-start">
-                                    ${
-                                      item.note
-                                        ? `<span class="text-[10px] bg-stone-100 text-stone-500 px-2 py-0.5 rounded-lg max-w-[110px] truncate font-bold">${item.note}</span>`
-                                        : ""
-                                    }
-                                    ${
-                                      item.url
-                                        ? `<a href="${item.url}" target="_blank" onclick="event.stopPropagation()" class="text-[10px] text-blue-400 bg-blue-50 px-2 py-0.5 rounded-lg font-bold hover:bg-blue-100"><i class="fa-solid fa-link mr-1"></i>連結</a>`
-                                        : ""
-                                    }
-                                </div>
-                                ${priceHtml}
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-            ul.appendChild(li);
-          });
-        }
-      }
-
-      // --- Helpers ---
-      let tempImgBase64 = null,
-        tempPurchaseImgBase64 = null;
-      function handleImage(input, previewId) {
-        if (input.files && input.files[0]) {
-          const reader = new FileReader();
-          reader.onload = (e) => {
-            const img = new Image();
-            img.onload = () => {
-              const canvas = document.createElement("canvas"),
-                ctx = canvas.getContext("2d");
-              const maxW = 600;
-              let w = img.width,
-                h = img.height;
-              if (w > maxW) {
-                h *= maxW / w;
-                w = maxW;
-              }
-              canvas.width = w;
-              canvas.height = h;
-              ctx.drawImage(img, 0, 0, w, h);
-              const base64 = canvas.toDataURL("image/jpeg", 0.6);
-              if (previewId === "img-preview") {
-                tempImgBase64 = base64;
-                document
-                  .getElementById("camera-placeholder")
-                  .classList.add("hidden");
-                document
-                  .getElementById("remove-img-btn")
-                  .classList.remove("hidden");
-              } else {
-                tempPurchaseImgBase64 = base64;
-              }
-              document.getElementById(previewId).src = base64;
-              document.getElementById(previewId).classList.remove("hidden");
-            };
-            img.src = e.target.result;
-          };
-          reader.readAsDataURL(input.files[0]);
-        }
-      }
-      function removeImage(e) {
-        if (e) e.stopPropagation();
-        tempImgBase64 = null;
-        document.getElementById("input-img").value = "";
-        document.getElementById("img-preview").classList.add("hidden");
-        document
-          .getElementById("camera-placeholder")
-          .classList.remove("hidden");
-        document.getElementById("remove-img-btn").classList.add("hidden");
-      }
-      function updatePriceCalc() {
-        const val = parseFloat(document.getElementById("input-price").value);
-        const curr = document.getElementById("input-currency").value;
-        const disp = document.getElementById("price-calc");
-        const rate = rates[curr] || 1;
-        if (val) {
-          const twd = Math.round(val * rate);
-          disp.innerHTML = `<span class="text-stone-300 text-[10px] mr-1">匯率 ${rate.toFixed(
-            3
-          )}</span> 約 NT$ ${twd.toLocaleString()}`;
-        } else {
-          disp.textContent = "";
-        }
-      }
-      // 改良版備份函式：自動分流
-      async function shareBackup() {
-        // 1. 詢問使用者要哪種備份
-        // 如果有照片，提示使用者文字備份會遺失照片
-        const hasImages = items.some((i) => i.img || i.purchaseImg);
-        let mode = "file"; // 預設下載檔案
-
-        if (
-          confirm(
-            `📦 選擇備份方式：\n\n[確定] = 下載完整檔案 (含照片，推薦)\n[取消] = 複製文字代碼 (不含照片，適合傳 LINE)`
-          )
-        ) {
-          mode = "file";
-        } else {
-          mode = "text";
-        }
-
-        if (mode === "file") {
-          // --- 模式 A: 完整檔案下載 ---
-          const data = JSON.stringify(items);
-          const blob = new Blob([data], { type: "application/json" });
-          const url = URL.createObjectURL(blob);
-
-          // 建立隱藏下載連結
-          const a = document.createElement("a");
-          a.href = url;
-          const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-          a.download = `buymemo_backup_${date}.json`;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          URL.revokeObjectURL(url);
-          showToast("✅ 備份檔已下載");
-        } else {
-          // --- 模式 B: 純文字複製 (瘦身版) ---
-          // 複製一份 items，並把圖片欄位清空
-          const leanItems = items.map((item) => {
-            const { img, purchaseImg, ...rest } = item; // 移除 img 欄位
-            return rest;
-          });
-
-          const data = JSON.stringify(leanItems);
-
-          navigator.clipboard
-            .writeText(data)
-            .then(() => {
-              showToast(
-                hasImages
-                  ? "✅ 文字備份碼已複製 (照片已移除)"
-                  : "✅ 備份碼已複製"
-              );
-            })
-            .catch(() => showToast("❌ 複製失敗", "error"));
-        }
-      }
-      function copyLink() {
-        navigator.clipboard
-          .writeText(window.location.href)
-          .then(() => showToast("🔗 網址已複製"));
-      }
-      async function importFromClipboard() {
-        try {
-          const text = await navigator.clipboard.readText();
-          if (text) parseAndLoad(text);
-          else showToast("剪貼簿是空的", "error");
-        } catch (err) {
-          showToast("無法讀取，請手動貼上", "error");
-        }
-      }
-      function importFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (e) => parseAndLoad(e.target.result);
-        reader.readAsText(file);
-        input.value = "";
-      }
-      function parseAndLoad(jsonStr) {
-        try {
-          const data = JSON.parse(jsonStr);
-          if (Array.isArray(data)) {
-            if (confirm(`偵測到 ${data.length} 筆資料，確定要還原？`)) {
-              items = data;
-              saveData();
-              renderList();
-              closeModal("restore-modal");
-              showToast("✅ 還原成功！");
-            }
-          } else showToast("格式錯誤", "error");
-        } catch (e) {
-          showToast("資料損毀", "error");
-        }
-      }
-      function saveData() {
-        localStorage.setItem("shunmemo_items", JSON.stringify(items));
-      }
-      function setFilter(f) {
-        currentFilter = f;
+          .getElementById("search-clear")
+          .classList.toggle("hidden", !searchQuery);
         renderList();
       }
-      function setSortField(f) {
-        sortField = f;
-        renderList();
-      }
-      function toggleSortDirection() {
-        sortDesc = !sortDesc;
-        renderList();
+      function clearSearch() {
+        document.getElementById("search-input").value = "";
+        setSearch("");
       }
 
-      function setTarget(t) {
-        document.getElementById("input-target").value = t;
-        const note = document.getElementById("input-note");
-        ["self", "gift", "proxy"].forEach((k) => {
-          const btn = document.getElementById(`target-${k}`);
-          if (k === t) {
-            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-600 bg-white shadow-sm border border-stone-100 transition-all flex items-center justify-center gap-1`;
-            if (t === "gift") {
-              btn.classList.add("text-pink-500", "bg-pink-50");
-              note.placeholder = "送給誰？什麼場合？";
-            } else if (t === "proxy") {
-              btn.classList.add("text-blue-500", "bg-blue-50");
-              note.placeholder = "幫誰買？規格是？";
-            } else {
-              note.placeholder = "備註";
-            }
-          } else {
-            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-400 hover:bg-white/50 transition-all flex items-center justify-center gap-1`;
-          }
-        });
-      }
-
-      function pasteUrl() {
-        navigator.clipboard.readText().then((text) => {
-          if (text) {
-            document.getElementById("input-url").value = text;
-            showToast("已貼上網址");
-          } else {
-            showToast("剪貼簿是空的", "error");
-          }
-        });
-      }
-
-      function openAddModal(isEdit = false) {
-        if (!isEdit) resetForm();
-        document.getElementById("add-modal").classList.add("open");
-        document.body.classList.add("modal-open");
-        updateSmartTags();
-        switchAddMode("single");
-      }
+      // --- Form & Helpers ---
       function resetForm() {
         isEditing = false;
         editId = null;
@@ -1962,32 +1842,349 @@
           '<i class="fa-solid fa-plus"></i> 加入清單';
       }
 
+      function switchAddMode(mode) {
+        currentAddMode = mode;
+        document
+          .getElementById("mode-single")
+          .classList.toggle("hidden", mode !== "single");
+        document
+          .getElementById("mode-batch")
+          .classList.toggle("hidden", mode !== "batch");
+        document
+          .getElementById("mode-batch")
+          .classList.toggle("flex", mode === "batch");
+
+        const btnS = document.getElementById("btn-mode-single");
+        const btnB = document.getElementById("btn-mode-batch");
+        if (mode === "single") {
+          btnS.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
+          btnB.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
+        } else {
+          btnB.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold bg-white text-stone-600 shadow-sm transition-all";
+          btnS.className =
+            "flex-1 py-2 rounded-lg text-xs font-bold text-stone-400 hover:bg-white/50 transition-all";
+        }
+      }
+
+      function handleMainAction() {
+        if (currentAddMode === "single") addItem();
+        else addBatchItems();
+      }
+
+      function addBatchItems() {
+        const text = document.getElementById("batch-input").value.trim();
+        if (!text) return showToast("請輸入內容", "error");
+        const lines = text.split("\n");
+        let count = 0;
+        lines.forEach((line) => {
+          line = line.trim();
+          if (!line) return;
+          let price = 0,
+            name = line;
+          const match = line.match(/[\$¥₩]?((\d{1,3}(,\d{3})*)|(\d+))(\.\d+)?/);
+          if (match) {
+            price = parseFloat(match[0].replace(/[\$¥₩,]/g, "")) || 0;
+            name = line.replace(match[0], "").trim();
+          }
+          if (!name && price > 0) name = "未命名商品";
+          if (name) {
+            items.unshift({
+              id: Date.now() + Math.random(),
+              name,
+              price,
+              category: document.getElementById("batch-category").value,
+              currency: document.getElementById("batch-currency").value,
+              target: document.getElementById("batch-target").value,
+              tags: [],
+              note: "",
+              completed: false,
+              createdAt: Date.now(),
+            });
+            count++;
+          }
+        });
+        if (count > 0) {
+          saveData();
+          closeModal("add-modal");
+          renderList();
+          showToast(`成功加入 ${count} 樣商品！`);
+          document.getElementById("batch-input").value = "";
+          switchAddMode("single");
+        } else {
+          showToast("無法解析", "error");
+        }
+      }
+
+      // --- Theme & Settings ---
+      function setTheme(t) {
+        settings.theme = t;
+        saveSettings();
+        applyTheme();
+        document.querySelectorAll(".theme-btn").forEach((btn) => {
+          if (
+            (t === "auto" && btn.innerText === "自動") ||
+            btn.onclick.toString().includes(t)
+          )
+            btn.classList.add("ring-2", "ring-stone-400");
+          else btn.classList.remove("ring-2", "ring-stone-400");
+        });
+      }
+      function applyTheme() {
+        if (settings.theme === "auto") detectSeason();
+        else {
+          currentTheme = customThemes[settings.theme];
+          applyThemeStyles();
+        }
+      }
+      function detectSeason() {
+        const m = new Date().getMonth() + 1;
+        let s = "winter";
+        if (m >= 3 && m <= 5) s = "spring";
+        else if (m >= 6 && m <= 8) s = "summer";
+        else if (m >= 9 && m <= 11) s = "autumn";
+        currentTheme = seasons[s];
+        document.getElementById("season-badge").textContent = `${
+          currentTheme.name
+        } · ${s.toUpperCase()}`;
+        applyThemeStyles();
+      }
+      function applyThemeStyles() {
+        document.body.style.backgroundColor = currentTheme.bg;
+        document.documentElement.style.setProperty(
+          "--bg-color",
+          currentTheme.bg
+        );
+        document.documentElement.style.setProperty(
+          "--theme-color",
+          currentTheme.badge
+        );
+        document.getElementById("season-badge").style.backgroundColor =
+          currentTheme.badge;
+        document.getElementById(
+          "nav-add-btn"
+        ).className = `w-14 h-14 rounded-full text-white shadow-lg shadow-stone-200 border-4 border-white flex items-center justify-center text-2xl z-50 ${currentTheme.btn}`;
+        document.getElementById(
+          "add-btn"
+        ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${currentTheme.btn}`;
+        renderList();
+      }
+      function saveSettings() {
+        settings.showTags = document.getElementById("toggle-tags").checked;
+        localStorage.setItem("shunmemo_settings", JSON.stringify(settings));
+        loadSettings();
+      }
+      function loadSettings() {
+        document.getElementById("smart-tags-container").style.display =
+          settings.showTags ? "block" : "none";
+        document.getElementById("toggle-tags").checked = settings.showTags;
+      }
+      function openSettings() {
+        document.getElementById("settings-modal").classList.add("open");
+      }
+      function openGuideModal() {
+        document.getElementById("guide-modal").classList.add("open");
+      }
+      function openRestoreModal() {
+        document.getElementById("restore-modal").classList.add("open");
+      }
+
+      // --- Misc ---
+      let tempImgBase64 = null,
+        tempPurchaseImgBase64 = null;
+      function handleImage(input, previewId) {
+        if (input.files && input.files[0]) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              const canvas = document.createElement("canvas");
+              const ctx = canvas.getContext("2d");
+              const maxW = 600;
+              let w = img.width,
+                h = img.height;
+              if (w > maxW) {
+                h *= maxW / w;
+                w = maxW;
+              }
+              canvas.width = w;
+              canvas.height = h;
+              ctx.drawImage(img, 0, 0, w, h);
+              const base64 = canvas.toDataURL("image/jpeg", 0.6);
+              if (previewId === "img-preview") {
+                tempImgBase64 = base64;
+                document
+                  .getElementById("camera-placeholder")
+                  .classList.add("hidden");
+                document
+                  .getElementById("remove-img-btn")
+                  .classList.remove("hidden");
+              } else tempPurchaseImgBase64 = base64;
+              document.getElementById(previewId).src = base64;
+              document.getElementById(previewId).classList.remove("hidden");
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(input.files[0]);
+        }
+      }
+      function removeImage(e) {
+        if (e) e.stopPropagation();
+        tempImgBase64 = null;
+        document.getElementById("input-img").value = "";
+        document.getElementById("img-preview").classList.add("hidden");
+        document
+          .getElementById("camera-placeholder")
+          .classList.remove("hidden");
+        document.getElementById("remove-img-btn").classList.add("hidden");
+      }
+      function updatePriceCalc() {
+        const val = parseFloat(document.getElementById("input-price").value);
+        const curr = document.getElementById("input-currency").value;
+        const rate = rates[curr] || 1;
+        const disp = document.getElementById("price-calc");
+        if (val)
+          disp.innerHTML = `<span class="text-stone-300 text-[10px] mr-1">匯率 ${rate.toFixed(
+            3
+          )}</span> 約 NT$ ${Math.round(val * rate).toLocaleString()}`;
+        else disp.textContent = "";
+      }
+      function setTarget(t) {
+        document.getElementById("input-target").value = t;
+        const note = document.getElementById("input-note");
+        ["self", "gift", "proxy"].forEach((k) => {
+          const btn = document.getElementById(`target-${k}`);
+          if (k === t) {
+            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-600 bg-white shadow-sm border border-stone-100 transition-all flex items-center justify-center gap-1`;
+            if (t === "gift") {
+              btn.classList.add("text-pink-500", "bg-pink-50");
+              note.placeholder = "送給誰？什麼場合？";
+            } else if (t === "proxy") {
+              btn.classList.add("text-blue-500", "bg-blue-50");
+              note.placeholder = "幫誰買？規格是？";
+            } else note.placeholder = "備註";
+          } else {
+            btn.className = `flex-1 py-2 rounded-xl text-xs font-bold text-stone-400 hover:bg-white/50 transition-all flex items-center justify-center gap-1`;
+          }
+        });
+      }
+      function updateSmartTags() {
+        const cat = document.getElementById("input-category").value;
+        const container = document.getElementById("tag-suggestions");
+        container.innerHTML = "";
+        const tags = {
+          clothing: ["S", "M", "L", "XL", "白", "黑", "免稅", "試穿"],
+          cosmetic: ["#01", "自然色", "亮白", "保濕", "霧面", "囤貨", "免稅"],
+          food: ["辣味", "大包", "盒裝", "抹茶", "限定", "賞味期"],
+          electronics: ["電池", "220V", "保固", "免稅", "最新"],
+          drug: ["頭痛", "感冒", "止癢", "維他命", "液體"],
+          general: ["送禮", "自用", "可愛", "日本製", "免稅"],
+        };
+        (tags[cat] || tags.general).forEach((t) => {
+          const btn = document.createElement("button");
+          btn.className =
+            "text-[10px] px-2.5 py-1.5 rounded-xl bg-stone-100 text-stone-500 border border-stone-200 hover:bg-stone-200 font-bold transition-colors";
+          btn.textContent = t;
+          btn.onclick = () => addTag(t);
+          container.appendChild(btn);
+        });
+      }
+      function addTag(t) {
+        if (!currentTags.includes(t)) {
+          currentTags.push(t);
+          renderSelectedTags();
+        }
+      }
+      function removeTag(t) {
+        currentTags = currentTags.filter((tag) => tag !== t);
+        renderSelectedTags();
+      }
+      function renderSelectedTags() {
+        const container = document.getElementById("selected-tags");
+        container.innerHTML = "";
+        currentTags.forEach((t) => {
+          const el = document.createElement("div");
+          el.className =
+            "inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-stone-700 text-white text-[10px] font-bold animate-in fade-in zoom-in duration-200";
+          el.innerHTML = `${t} <button onclick="removeTag('${t}')"><i class="fa-solid fa-xmark text-[8px]"></i></button>`;
+          container.appendChild(el);
+        });
+      }
+      async function fetchRates() {
+        try {
+          const res = await fetch(
+            "https://api.exchangerate-api.com/v4/latest/TWD"
+          );
+          if (res.ok) {
+            const data = await res.json();
+            const newRates = {};
+            for (let k in data.rates) newRates[k] = 1 / data.rates[k];
+            rates = { ...newRates, ...rates };
+            updateRateDisplay();
+            renderList();
+          }
+        } catch (e) {}
+        updateRateDisplay();
+      }
+      function updateRateDisplay() {
+        const r = rates[currentHomeCurrency] || 1;
+        const val = r < 0.1 ? r.toFixed(4) : r.toFixed(3);
+        document.getElementById(
+          "rate-ticker"
+        ).innerHTML = `${val} <span class="text-[9px] font-normal text-stone-400">TWD</span>`;
+      }
       function toggleHomeRatePicker() {
         document.getElementById("home-rate-picker").classList.toggle("hidden");
       }
-      function setHomeCurrency(code) {
-        currentHomeCurrency = code;
-        document.getElementById("base-currency-label").textContent = code;
+      function setHomeCurrency(c) {
+        currentHomeCurrency = c;
+        document.getElementById("base-currency-label").textContent = c;
         toggleHomeRatePicker();
         updateRateDisplay();
         renderList();
       }
-
-      function openRestoreModal() {
-        document.getElementById("restore-modal").classList.add("open");
-        document.body.classList.add("modal-open");
+      function toggleCurrencyPicker() {
+        const p = document.getElementById("currency-picker");
+        p.classList.toggle("hidden");
+        document.getElementById("curr-arrow").style.transform =
+          p.classList.contains("hidden") ? "rotate(0deg)" : "rotate(180deg)";
       }
-      function closeModal(id) {
-        document.getElementById(id).classList.remove("open");
-        document.body.classList.remove("modal-open");
+      function selectCurrency(c) {
+        document.getElementById("input-currency").value = c;
+        document.getElementById("curr-flag").textContent = {
+          JPY: "🇯🇵",
+          KRW: "🇰🇷",
+          USD: "🇺🇸",
+          EUR: "🇪🇺",
+          TWD: "🇹🇼",
+        }[c];
+        document.getElementById("curr-code").textContent = c;
+        document.getElementById("currency-suffix").textContent = {
+          JPY: "¥",
+          KRW: "₩",
+          USD: "$",
+          EUR: "€",
+          TWD: "NT$",
+        }[c];
+        toggleCurrencyPicker();
+        updatePriceCalc();
       }
-      function deleteItem(id, e) {
-        if (e) e.stopPropagation();
-        if (confirm("確定要刪除？")) {
-          items = items.filter((i) => i.id !== id);
-          saveData();
-          renderList();
-        }
+      function saveData() {
+        localStorage.setItem("shunmemo_items", JSON.stringify(items));
+      }
+      function setFilter(f) {
+        currentFilter = f;
+        renderList();
+      }
+      function setSortField(f) {
+        sortField = f;
+        renderList();
+      }
+      function toggleSortDirection() {
+        sortDesc = !sortDesc;
+        renderList();
       }
       function clearCompleted() {
         if (confirm("確定清除完成項目？")) {
@@ -1997,26 +2194,142 @@
           showToast("已清除");
         }
       }
-      function showToast(msg, type = "success") {
-        const container = document.getElementById("toast-container");
+      function pasteUrl() {
+        navigator.clipboard.readText().then((t) => {
+          if (t) {
+            document.getElementById("input-url").value = t;
+            showToast("已貼上網址");
+          } else showToast("剪貼簿是空的", "error");
+        });
+      }
+      function showToast(msg, type = "success", duration = 2000) {
+        const c = document.getElementById("toast-container");
         const el = document.createElement("div");
         const color =
           type === "success"
             ? "bg-white text-stone-700"
             : "bg-red-50 text-red-500";
-        el.className = `${color} px-4 py-2 rounded-full shadow-lg border border-stone-100 text-xs font-bold transition-all transform translate-y-4 opacity-0 flex items-center gap-2`;
+        el.className = `${color} px-4 py-3 rounded-2xl shadow-xl border border-stone-100 text-xs font-bold transition-all transform translate-y-4 opacity-0 flex items-center gap-2 pointer-events-auto`;
         el.innerHTML =
           (type === "success"
             ? '<i class="fa-solid fa-check text-green-400"></i>'
             : '<i class="fa-solid fa-circle-exclamation"></i>') + msg;
-        container.appendChild(el);
-        requestAnimationFrame(() => {
-          el.classList.remove("translate-y-4", "opacity-0");
-        });
+        c.appendChild(el);
+        requestAnimationFrame(() =>
+          el.classList.remove("translate-y-4", "opacity-0")
+        );
         setTimeout(() => {
           el.classList.add("translate-y-4", "opacity-0");
           setTimeout(() => el.remove(), 300);
-        }, 2000);
+        }, duration);
+      }
+      function closeGuideWithAnimation() {
+        const icon = document.getElementById("guide-plane-icon");
+        const trail = document.getElementById("guide-plane-trail");
+        icon.classList.add("plane-fly");
+        trail.classList.add("trail-grow");
+        setTimeout(() => {
+          closeModal("guide-modal");
+          setTimeout(() => {
+            icon.classList.remove("plane-fly");
+            trail.classList.remove("trail-grow");
+          }, 300);
+        }, 600);
+      }
+
+      // --- Image Viewer Functions ---
+      function openImageViewer(src) {
+        const modal = document.getElementById("image-viewer-modal");
+        const img = document.getElementById("full-size-image");
+
+        img.src = src;
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+
+        // Small delay to trigger transition
+        requestAnimationFrame(() => {
+          modal.classList.remove("opacity-0");
+          img.classList.remove("scale-95");
+          img.classList.add("scale-100");
+        });
+      }
+
+      function closeImageViewer() {
+        const modal = document.getElementById("image-viewer-modal");
+        const img = document.getElementById("full-size-image");
+
+        modal.classList.add("opacity-0");
+        img.classList.remove("scale-100");
+        img.classList.add("scale-95");
+
+        setTimeout(() => {
+          modal.classList.add("hidden");
+          modal.classList.remove("flex");
+          img.src = ""; // Clear src
+        }, 300);
+      }
+
+      async function shareBackup() {
+        const mode = confirm(
+          "📦 備份方式：\n\n[確定] = 下載檔案 (推薦，含照片)\n[取消] = 複製代碼 (僅文字)"
+        )
+          ? "file"
+          : "text";
+        if (mode === "file") {
+          const blob = new Blob([JSON.stringify(items)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `buymemo_backup_${new Date()
+            .toISOString()
+            .slice(0, 10)}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          showToast("✅ 備份檔已下載");
+        } else {
+          const lean = items.map(({ img, purchaseImg, ...rest }) => rest);
+          navigator.clipboard
+            .writeText(JSON.stringify(lean))
+            .then(() => showToast("✅ 代碼已複製 (無照片)"))
+            .catch(() => showToast("❌ 複製失敗", "error"));
+        }
+      }
+      async function importFromClipboard() {
+        try {
+          const t = await navigator.clipboard.readText();
+          if (t) parseAndLoad(t);
+          else showToast("剪貼簿是空的", "error");
+        } catch (e) {
+          showToast("無法讀取", "error");
+        }
+      }
+      function importFile(input) {
+        const f = input.files[0];
+        if (!f) return;
+        const r = new FileReader();
+        r.onload = (e) => parseAndLoad(e.target.result);
+        r.readAsText(f);
+        input.value = "";
+      }
+      function parseAndLoad(json) {
+        try {
+          const data = JSON.parse(json);
+          if (
+            Array.isArray(data) &&
+            confirm(`偵測到 ${data.length} 筆資料，確定還原？`)
+          ) {
+            items = data;
+            saveData();
+            renderList();
+            closeModal("restore-modal");
+            showToast("✅ 還原成功！");
+          } else showToast("格式錯誤", "error");
+        } catch (e) {
+          showToast("資料損毀", "error");
+        }
       }
     </script>
   </body>
