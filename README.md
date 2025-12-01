@@ -33,9 +33,8 @@
 
 ## 🚀 如何使用
 
-1.  下載 `index.html`。
-2.  用瀏覽器 (Chrome, Safari) 開啟。
-3.  **手機用戶**: 推薦使用「加入主畫面」功能，獲得原生 App 般的體驗。
+1.  用瀏覽器 (Chrome, Safari) 開啟 https://louis-369.github.io/vibe-shop-list/。
+2.  **手機用戶**: 推薦使用「加入主畫面」功能，獲得原生 App 般的體驗。
 
 ---
 
