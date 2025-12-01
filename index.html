@@ -14,8 +14,20 @@
       name="apple-mobile-web-app-status-bar-style"
       content="black-translucent"
     />
+    <meta name="apple-mobile-web-app-title" content="世界口袋" />
+
+    <!-- App Icon (iOS Home Screen) -->
+    <link
+      rel="apple-touch-icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23ffe4e6%22/><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23fb7185%22 opacity=%220.8%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>✈️</text></svg>"
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%23fb7185%22/><text x=%2250%22 y=%2250%22 font-size=%2260%22 text-anchor=%22middle%22 dy=%22.35em%22>✈️</text></svg>"
+    />
 
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <link
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
       rel="stylesheet"
@@ -37,7 +49,6 @@
         background-color: var(--bg-color, #ffe4e6);
         transition: background-color 0.8s ease;
         -webkit-tap-highlight-color: transparent;
-        /* Prevent rubber banding on iOS */
         overscroll-behavior-y: none;
       }
 
@@ -118,7 +129,6 @@
         position: relative;
         overflow: hidden;
         border-radius: 20px;
-        /* Critical for ensuring vertical scroll still works while swiping horizontal */
         touch-action: pan-y;
       }
 
@@ -228,6 +238,20 @@
       }
       .btn-press:active {
         transform: scale(0.95);
+      }
+
+      /* Slow Pulse for Reorder Button */
+      .animate-pulse-slow {
+        animation: pulseSlow 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      @keyframes pulseSlow {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.6;
+        }
       }
 
       /* --- Modals --- */
@@ -359,13 +383,98 @@
         justify-content: center;
         z-index: 1;
       }
+
+      /* --- Season Theme Picker --- */
+      .season-tab {
+        flex: 1;
+        padding: 8px 4px;
+        font-size: 11px;
+        font-weight: 700;
+        border-radius: 12px;
+        transition: all 0.2s;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+      }
+      .season-tab.active {
+        background: white;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .season-tab:not(.active) {
+        color: #a8a29e;
+      }
+      .season-tab:not(.active):hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
+
+      .solar-term-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        padding: 10px 6px;
+        border-radius: 14px;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 2px solid transparent;
+      }
+      .solar-term-btn:hover {
+        background: #f5f5f4;
+      }
+      .solar-term-btn.selected {
+        border-color: var(--theme-color, #fb7185);
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      }
+      .solar-term-btn .color-dot {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 3px solid white;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+        transition: transform 0.2s;
+      }
+      .solar-term-btn:hover .color-dot {
+        transform: scale(1.1);
+      }
+      .solar-term-btn.selected .color-dot {
+        transform: scale(1.15);
+      }
+      .solar-term-btn .term-name {
+        font-size: 10px;
+        font-weight: 700;
+        color: #57534e;
+      }
+      .solar-term-btn.selected .term-name {
+        color: var(--theme-color, #fb7185);
+      }
+
+      /* Season Grid Animation */
+      .season-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(8px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
     </style>
   </head>
   <body class="flex justify-center items-start sm:items-center sm:py-10">
     <!-- Toast -->
     <div
       id="toast-container"
-      class="fixed top-6 left-1/2 -translate-x-1/2 z-[100] w-full max-w-xs flex flex-col items-center gap-2 pointer-events-none"
+      class="fixed left-1/2 -translate-x-1/2 z-[100] w-full max-w-xs flex flex-col items-center gap-2 pointer-events-none"
+      style="top: calc(env(safe-area-inset-top) + 64px)"
     ></div>
 
     <!-- App Container -->
@@ -375,7 +484,8 @@
     >
       <!-- Header -->
       <header
-        class="flex-none pt-6 pb-4 px-6 bg-white/80 backdrop-blur-md border-b border-stone-100/50 sticky top-0 z-20"
+        class="flex-none pb-4 px-6 bg-white/80 backdrop-blur-md border-b border-stone-100/50 sticky top-0 z-20"
+        style="padding-top: calc(env(safe-area-inset-top) + 12px)"
       >
         <div class="flex justify-between items-start">
           <div>
@@ -452,7 +562,7 @@
           </div>
         </div>
 
-        <!-- Search Bar (Optimized for iOS) -->
+        <!-- Search Bar -->
         <div class="mt-2 relative group z-10">
           <div
             class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
@@ -510,12 +620,14 @@
           <div class="flex gap-1 h-full">
             <div class="relative h-full w-24">
               <select
+                id="sort-select"
                 onchange="setSortField(this.value)"
                 class="appearance-none w-full h-full bg-white border border-stone-100 text-stone-500 text-[10px] font-bold pl-3 pr-7 rounded-xl focus:outline-none shadow-sm"
               >
                 <option value="date">📅 日期</option>
                 <option value="price">💰 金額</option>
                 <option value="category">📂 分類</option>
+                <option value="custom">✨ 自訂</option>
               </select>
               <div
                 class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none"
@@ -525,6 +637,13 @@
                 ></i>
               </div>
             </div>
+            <button
+              onclick="toggleReorderMode()"
+              id="reorder-btn"
+              class="hidden w-10 h-full items-center justify-center bg-stone-700 border border-stone-700 rounded-xl text-white text-[10px] shadow-md hover:bg-stone-600 active:scale-90 transition-all duration-300"
+            >
+              <i class="fa-solid fa-list-ul text-sm"></i>
+            </button>
             <button
               onclick="toggleSortDirection()"
               id="sort-btn"
@@ -548,7 +667,7 @@
 
       <!-- List Area -->
       <div
-        class="flex-1 overflow-y-auto no-scrollbar p-3 pb-28 bg-stone-50/30 scroll-smooth"
+        class="flex-1 overflow-y-auto no-scrollbar p-3 bg-stone-50/30 scroll-smooth pb-36"
         id="list-container"
       >
         <div
@@ -574,7 +693,7 @@
 
       <!-- Footer Nav -->
       <div
-        class="bg-white/95 backdrop-blur-md border-t border-stone-100 pb-safe pt-2 px-4 z-40 flex justify-around items-end text-[9px] text-stone-400 font-bold absolute bottom-0 w-full h-[88px]"
+        class="bg-white/95 backdrop-blur-md border-t border-stone-100 pt-2 px-4 z-40 flex justify-around items-end text-[9px] text-stone-400 font-bold absolute bottom-0 w-full pb-safe min-h-[80px]"
       >
         <button
           onclick="openGuideModal()"
@@ -611,56 +730,171 @@
           <h3 class="font-black text-stone-700 text-lg flex items-center gap-2">
             <i class="fa-solid fa-book-open-reader text-stone-400"></i> 使用指南
           </h3>
+          <button
+            onclick="closeModal('guide-modal')"
+            class="w-8 h-8 rounded-full bg-stone-100 text-stone-400 flex items-center justify-center hover:bg-stone-200"
+            type="button"
+          >
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
         <div class="space-y-6 pb-4">
+          <!-- 新增商品 -->
           <div>
-            <h4 class="font-bold text-stone-700 mb-3 text-sm">🛒 購物前準備</h4>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">✨ 新增商品</h4>
             <div class="guide-step">
               <div class="guide-num">1</div>
               <p class="text-xs text-stone-500 font-bold leading-relaxed">
-                新增清單：點擊下方
+                <span class="text-stone-700">單項輸入</span>：點擊下方
                 <i
                   class="fa-solid fa-plus text-[10px] bg-stone-200 px-1 rounded"
                 ></i>
-                按鈕。
+                按鈕，填寫商品資訊、拍照、選擇幣別。
               </p>
             </div>
             <div class="guide-step">
               <div class="guide-num">2</div>
               <p class="text-xs text-stone-500 font-bold leading-relaxed">
-                匯率設定：首頁上方可切換主要幣別。
+                <span class="text-stone-700">批次貼上</span
+                >：切換到「批次貼上」模式，可一次輸入多項商品，系統會自動辨識名稱與金額。
               </p>
             </div>
           </div>
+
+          <!-- 購物中操作 -->
           <div>
-            <h4 class="font-bold text-stone-700 mb-3 text-sm">🛍️ 購物中</h4>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">🛍️ 購物中操作</h4>
             <div class="guide-step">
               <div class="guide-num">3</div>
               <p class="text-xs text-stone-500 font-bold leading-relaxed">
-                商品打勾：點擊商品左側圓圈，可輸入實際價格。
+                <span class="text-stone-700">完成購買</span
+                >：點擊商品左側圓圈打勾，可輸入實際付款金額與拍照紀錄。
               </p>
             </div>
             <div class="guide-step">
               <div class="guide-num">4</div>
               <p class="text-xs text-stone-500 font-bold leading-relaxed">
-                左滑刪除：向左滑動商品卡片，會出現紅色刪除按鈕，點擊確認刪除。
+                <span class="text-stone-700">滑動手勢</span>：
+                <span class="inline-flex items-center gap-1 text-green-600"
+                  ><i class="fa-solid fa-arrow-right text-[10px]"></i>右滑</span
+                >
+                快速入手；
+                <span class="inline-flex items-center gap-1 text-red-500"
+                  ><i class="fa-solid fa-arrow-left text-[10px]"></i>左滑</span
+                >
+                刪除商品。
               </p>
             </div>
-          </div>
-          <div>
-            <h4 class="font-bold text-stone-700 mb-3 text-sm">📦 回國後</h4>
             <div class="guide-step">
               <div class="guide-num">5</div>
               <p class="text-xs text-stone-500 font-bold leading-relaxed">
-                備份資料：點擊「設定」中的「資料管理」按鈕。
+                <span class="text-stone-700">編輯商品</span
+                >：點擊商品可進入編輯模式，修改資訊或更換照片。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">6</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">照片放大</span
+                >：點擊商品圖片可全螢幕檢視照片。
+              </p>
+            </div>
+          </div>
+
+          <!-- 排序與篩選 -->
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">📋 排序與篩選</h4>
+            <div class="guide-step">
+              <div class="guide-num">7</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">分類篩選</span
+                >：使用「全部／購物中／已入手」標籤快速切換檢視。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">8</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">自訂排序</span>：排序選擇「✨
+                自訂」後，點擊
+                <i
+                  class="fa-solid fa-list-ul text-[10px] bg-stone-200 px-1 rounded"
+                ></i>
+                按鈕進入拖曳模式，長按
+                <i class="fa-solid fa-bars text-[10px]"></i>
+                手柄調整順序。
+              </p>
+            </div>
+          </div>
+
+          <!-- 匯率與個人化 -->
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">
+              💱 匯率與個人化
+            </h4>
+            <div class="guide-step">
+              <div class="guide-num">9</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">匯率切換</span
+                >：首頁右上角可切換主要顯示幣別（JPY、KRW、USD
+                等），匯率即時更新。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">10</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">24節氣主題</span
+                >：設定中可選擇「自動」隨節氣變色，或手動挑選喜歡的季節與節氣色調。
+              </p>
+            </div>
+          </div>
+
+          <!-- 資料管理 -->
+          <div>
+            <h4 class="font-bold text-stone-700 mb-3 text-sm">📦 資料備份</h4>
+            <div class="guide-step">
+              <div class="guide-num">11</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">備份資料</span>：設定 → 資料管理 →
+                匯出備份檔（含照片）或複製代碼（僅文字）。
+              </p>
+            </div>
+            <div class="guide-step">
+              <div class="guide-num">12</div>
+              <p class="text-xs text-stone-500 font-bold leading-relaxed">
+                <span class="text-stone-700">還原紀錄</span>：可貼上備份碼或上傳
+                .json 檔案還原資料。
               </p>
             </div>
           </div>
         </div>
+
+        <!-- 小提示 -->
+        <div class="bg-stone-50 rounded-2xl p-4 mb-4 border border-stone-100">
+          <div
+            class="text-[10px] font-bold text-stone-400 uppercase mb-2 flex items-center gap-1"
+          >
+            <i class="fa-solid fa-lightbulb text-yellow-400"></i> 小提示
+          </div>
+          <ul class="text-xs text-stone-500 font-medium space-y-1.5">
+            <li class="flex items-start gap-2">
+              <span class="text-stone-300">•</span>
+              <span>新增商品時可選擇「自用／送禮／代購」用途分類</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-stone-300">•</span>
+              <span>購物助手會依商品分類推薦常用規格標籤</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-stone-300">•</span>
+              <span>刪除商品後可點擊「復原」撤銷操作</span>
+            </li>
+          </ul>
+        </div>
+
         <button
           onclick="closeGuideWithAnimation()"
           id="guide-close-btn"
-          class="w-full mt-6 py-3.5 bg-stone-800 text-white rounded-2xl text-xs font-bold shadow-md hover:bg-stone-700 transition-colors btn-press flex items-center justify-center gap-2 overflow-hidden"
+          class="w-full py-3.5 bg-stone-800 text-white rounded-2xl text-xs font-bold shadow-md hover:bg-stone-700 transition-colors btn-press flex items-center justify-center gap-2 overflow-hidden"
         >
           <span>祝您買得開心！</span>
           <div class="relative flex items-center">
@@ -1023,13 +1257,13 @@
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal-backdrop z-[90]">
       <div
-        class="modal-content bg-white w-full max-w-sm rounded-[32px] shadow-2xl p-6 relative"
+        class="modal-content bg-white w-full max-w-sm shadow-2xl p-6 relative overflow-y-auto custom-scrollbar"
+        style="max-height: 90dvh"
       >
         <div class="flex justify-between items-center mb-6 relative z-20">
           <h3 class="font-black text-stone-700 text-lg flex items-center gap-2">
             <i class="fa-solid fa-sliders"></i> 設定
           </h3>
-          <!-- FIXED CLOSE BUTTON -->
           <button
             type="button"
             onclick="event.stopPropagation(); closeModal('settings-modal')"
@@ -1038,34 +1272,117 @@
             <i class="fa-solid fa-xmark text-lg"></i>
           </button>
         </div>
+
         <div class="space-y-6 relative z-10">
+          <!-- 24 節氣主題選擇器 -->
           <div>
-            <div class="text-sm font-bold text-stone-700 mb-2">主題風格</div>
-            <div class="flex gap-2">
+            <div
+              class="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2"
+            >
+              <i class="fa-solid fa-palette text-stone-400"></i> 主題風格
+            </div>
+
+            <!-- 季節 Tabs -->
+            <div
+              class="flex bg-stone-100 p-1 rounded-2xl mb-3 gap-1"
+              id="season-tabs"
+            >
               <button
-                onclick="setTheme('auto')"
-                class="theme-btn flex-1 py-2 rounded-xl text-xs font-bold border border-stone-200 bg-stone-50 text-stone-500"
+                onclick="selectSeasonTab('auto')"
+                class="season-tab active"
+                data-season="auto"
               >
-                自動
+                <span class="h-5 flex items-center justify-center text-sm"
+                  >✨</span
+                >
+                <span>自動</span>
               </button>
               <button
-                onclick="setTheme('pink')"
-                class="theme-btn w-8 h-8 rounded-full bg-pink-200 border-2 border-white shadow-sm"
-              ></button>
+                onclick="selectSeasonTab('spring')"
+                class="season-tab"
+                data-season="spring"
+              >
+                <span class="h-5 flex items-center justify-center text-base"
+                  >🌸</span
+                >
+                <span>春</span>
+              </button>
               <button
-                onclick="setTheme('green')"
-                class="theme-btn w-8 h-8 rounded-full bg-emerald-200 border-2 border-white shadow-sm"
-              ></button>
+                onclick="selectSeasonTab('summer')"
+                class="season-tab"
+                data-season="summer"
+              >
+                <span class="h-5 flex items-center justify-center text-base"
+                  >🌊</span
+                >
+                <span>夏</span>
+              </button>
               <button
-                onclick="setTheme('blue')"
-                class="theme-btn w-8 h-8 rounded-full bg-sky-200 border-2 border-white shadow-sm"
-              ></button>
+                onclick="selectSeasonTab('autumn')"
+                class="season-tab"
+                data-season="autumn"
+              >
+                <span class="h-5 flex items-center justify-center text-base"
+                  >🍁</span
+                >
+                <span>秋</span>
+              </button>
               <button
-                onclick="setTheme('black')"
-                class="theme-btn w-8 h-8 rounded-full bg-stone-700 border-2 border-white shadow-sm"
-              ></button>
+                onclick="selectSeasonTab('winter')"
+                class="season-tab"
+                data-season="winter"
+              >
+                <span class="h-5 flex items-center justify-center text-base"
+                  >❄️</span
+                >
+                <span>冬</span>
+              </button>
+            </div>
+
+            <!-- 自動模式說明 -->
+            <div
+              id="auto-mode-desc"
+              class="bg-gradient-to-r from-stone-50 to-stone-100 p-4 rounded-2xl border border-stone-200"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-12 h-12 rounded-full grid place-items-center text-2xl leading-none"
+                  id="auto-current-icon"
+                  style="background: linear-gradient(135deg, #fb7185, #fbbf24)"
+                >
+                  <span>🌸</span>
+                </div>
+                <div class="flex-1">
+                  <div class="text-xs font-bold text-stone-400 mb-0.5">
+                    目前節氣
+                  </div>
+                  <div
+                    class="text-sm font-black text-stone-700"
+                    id="auto-current-term"
+                  >
+                    春分
+                  </div>
+                  <div class="text-[10px] text-stone-400 mt-0.5">
+                    隨時間自動變換主題色
+                  </div>
+                </div>
+                <div
+                  class="w-8 h-8 rounded-full flex items-center justify-center"
+                  id="auto-check-mark"
+                  style="background-color: var(--theme-color, #fb7185)"
+                >
+                  <i class="fa-solid fa-check text-white text-xs"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- 節氣網格 -->
+            <div id="solar-terms-grid" class="hidden">
+              <!-- 動態生成 -->
             </div>
           </div>
+
+          <!-- 購物助手標籤開關 -->
           <div class="flex justify-between items-center">
             <div>
               <div class="text-sm font-bold text-stone-700">購物助手標籤</div>
@@ -1084,6 +1401,7 @@
             </label>
           </div>
 
+          <!-- 資料管理 -->
           <div>
             <div
               class="text-sm font-bold text-stone-700 mb-3 flex items-center gap-2"
@@ -1118,7 +1436,7 @@
         </div>
         <div class="mt-8 pt-4 border-t border-stone-100 text-center">
           <p class="text-[10px] text-stone-300 font-bold">
-            BuyMemo v3.3 Refactored
+            BuyMemo v3.4 · 24節氣版
           </p>
         </div>
       </div>
@@ -1282,6 +1600,9 @@
       let editId = null;
       let deletedItemBackup = null;
       let searchQuery = "";
+      let isReorderMode = false;
+      let sortableInstance = null;
+      let activeSeasonTab = "auto";
 
       // Swipe State
       let touchStartX = 0;
@@ -1289,58 +1610,242 @@
       let currentSwipeId = null;
       let isSwiping = false;
 
-      // Constants
-      const seasons = {
-        spring: {
-          bg: "#fff0f5",
-          badge: "#f472b6",
-          btn: "bg-pink-400",
-          name: "春分",
+      // =============================================
+      // 24 節氣完整資料
+      // =============================================
+      const solarTerms = {
+        // 🌸 春季
+        lichun: {
+          name: "立春",
+          icon: "🌱",
+          badge: "#a3e635",
+          bg: "#f7fee7",
+          btn: "bg-lime-400",
+          season: "spring",
         },
-        summer: {
+        yushui: {
+          name: "雨水",
+          icon: "💧",
+          badge: "#7dd3fc",
           bg: "#f0f9ff",
-          badge: "#38bdf8",
-          btn: "bg-sky-400",
-          name: "大暑",
+          btn: "bg-sky-300",
+          season: "spring",
         },
-        autumn: {
+        jingzhe: {
+          name: "驚蟄",
+          icon: "⚡",
+          badge: "#c084fc",
+          bg: "#faf5ff",
+          btn: "bg-purple-400",
+          season: "spring",
+        },
+        chunfen: {
+          name: "春分",
+          icon: "🌸",
+          badge: "#fb7185",
+          bg: "#ffe4e6",
+          btn: "bg-rose-400",
+          season: "spring",
+        },
+        qingming: {
+          name: "清明",
+          icon: "🍃",
+          badge: "#34d399",
+          bg: "#ecfdf5",
+          btn: "bg-emerald-400",
+          season: "spring",
+        },
+        guyu: {
+          name: "穀雨",
+          icon: "🌾",
+          badge: "#fbbf24",
+          bg: "#fffbeb",
+          btn: "bg-amber-400",
+          season: "spring",
+        },
+        // 🌊 夏季
+        lixia: {
+          name: "立夏",
+          icon: "🌿",
+          badge: "#2dd4bf",
+          bg: "#f0fdfa",
+          btn: "bg-teal-400",
+          season: "summer",
+        },
+        xiaoman: {
+          name: "小滿",
+          icon: "🍞",
+          badge: "#fdba74",
           bg: "#fff7ed",
-          badge: "#fb923c",
-          btn: "bg-orange-400",
-          name: "立秋",
+          btn: "bg-orange-300",
+          season: "summer",
         },
-        winter: {
-          bg: "#f8fafc",
+        mangzhong: {
+          name: "芒種",
+          icon: "🍋",
+          badge: "#84cc16",
+          bg: "#ecfccb",
+          btn: "bg-lime-500",
+          season: "summer",
+        },
+        xiazhi: {
+          name: "夏至",
+          icon: "☀️",
+          badge: "#f87171",
+          bg: "#fef2f2",
+          btn: "bg-red-400",
+          season: "summer",
+        },
+        xiaoshu: {
+          name: "小暑",
+          icon: "⛱️",
+          badge: "#fb923c",
+          bg: "#fff7ed",
+          btn: "bg-orange-400",
+          season: "summer",
+        },
+        dashu: {
+          name: "大暑",
+          icon: "🌊",
+          badge: "#0ea5e9",
+          bg: "#f0f9ff",
+          btn: "bg-sky-500",
+          season: "summer",
+        },
+        // 🍁 秋季
+        liqiu: {
+          name: "立秋",
+          icon: "🍂",
+          badge: "#d97706",
+          bg: "#fffbeb",
+          btn: "bg-amber-600",
+          season: "autumn",
+        },
+        chushu: {
+          name: "處暑",
+          icon: "🍵",
+          badge: "#65a30d",
+          bg: "#f7fee7",
+          btn: "bg-lime-600",
+          season: "autumn",
+        },
+        bailu: {
+          name: "白露",
+          icon: "🌫️",
           badge: "#94a3b8",
+          bg: "#f8fafc",
           btn: "bg-slate-400",
+          season: "autumn",
+        },
+        qiufen: {
+          name: "秋分",
+          icon: "🍁",
+          badge: "#ea580c",
+          bg: "#fff7ed",
+          btn: "bg-orange-600",
+          season: "autumn",
+        },
+        hanlu: {
+          name: "寒露",
+          icon: "🌑",
+          badge: "#60a5fa",
+          bg: "#eff6ff",
+          btn: "bg-blue-400",
+          season: "autumn",
+        },
+        shuangjian: {
+          name: "霜降",
+          icon: "🍇",
+          badge: "#a78bfa",
+          bg: "#f5f3ff",
+          btn: "bg-violet-400",
+          season: "autumn",
+        },
+        // ❄️ 冬季
+        lidong: {
+          name: "立冬",
+          icon: "⛰️",
+          badge: "#57534e",
+          bg: "#fafaf9",
+          btn: "bg-stone-600",
+          season: "winter",
+        },
+        xiaoxue: {
+          name: "小雪",
+          icon: "❄️",
+          badge: "#7dd3fc",
+          bg: "#f0f9ff",
+          btn: "bg-sky-300",
+          season: "winter",
+        },
+        daxue: {
+          name: "大雪",
+          icon: "⛄",
+          badge: "#cbd5e1",
+          bg: "#ffffff",
+          btn: "bg-slate-300",
+          season: "winter",
+        },
+        dongzhi: {
+          name: "冬至",
+          icon: "🌌",
+          badge: "#6366f1",
+          bg: "#eef2ff",
+          btn: "bg-indigo-500",
+          season: "winter",
+        },
+        xiaohan: {
+          name: "小寒",
+          icon: "🌺",
+          badge: "#f43f5e",
+          bg: "#ffe4e6",
+          btn: "bg-rose-500",
+          season: "winter",
+        },
+        dahan: {
           name: "大寒",
+          icon: "🗻",
+          badge: "#64748b",
+          bg: "#f1f5f9",
+          btn: "bg-slate-500",
+          season: "winter",
         },
       };
-      const customThemes = {
-        pink: {
-          bg: "#ffe4e6",
-          badge: "#fb7185",
-          btn: "bg-rose-400",
-          name: "櫻花",
-        },
-        green: {
-          bg: "#ecfccb",
-          badge: "#84cc16",
-          btn: "bg-lime-500",
-          name: "抹茶",
-        },
-        blue: {
-          bg: "#e0f2fe",
-          badge: "#0ea5e9",
-          btn: "bg-sky-500",
-          name: "海洋",
-        },
-        black: {
-          bg: "#f5f5f4",
-          badge: "#57534e",
-          btn: "bg-stone-700",
-          name: "極簡",
-        },
+
+      // 節氣日期對照表 (大約日期，每年略有不同)
+      const solarTermDates = [
+        { month: 2, day: 4, key: "lichun" },
+        { month: 2, day: 19, key: "yushui" },
+        { month: 3, day: 6, key: "jingzhe" },
+        { month: 3, day: 21, key: "chunfen" },
+        { month: 4, day: 5, key: "qingming" },
+        { month: 4, day: 20, key: "guyu" },
+        { month: 5, day: 6, key: "lixia" },
+        { month: 5, day: 21, key: "xiaoman" },
+        { month: 6, day: 6, key: "mangzhong" },
+        { month: 6, day: 21, key: "xiazhi" },
+        { month: 7, day: 7, key: "xiaoshu" },
+        { month: 7, day: 23, key: "dashu" },
+        { month: 8, day: 8, key: "liqiu" },
+        { month: 8, day: 23, key: "chushu" },
+        { month: 9, day: 8, key: "bailu" },
+        { month: 9, day: 23, key: "qiufen" },
+        { month: 10, day: 8, key: "hanlu" },
+        { month: 10, day: 24, key: "shuangjian" },
+        { month: 11, day: 8, key: "lidong" },
+        { month: 11, day: 22, key: "xiaoxue" },
+        { month: 12, day: 7, key: "daxue" },
+        { month: 12, day: 22, key: "dongzhi" },
+        { month: 1, day: 6, key: "xiaohan" },
+        { month: 1, day: 20, key: "dahan" },
+      ];
+
+      // 季節分類
+      const seasonTerms = {
+        spring: ["lichun", "yushui", "jingzhe", "chunfen", "qingming", "guyu"],
+        summer: ["lixia", "xiaoman", "mangzhong", "xiazhi", "xiaoshu", "dashu"],
+        autumn: ["liqiu", "chushu", "bailu", "qiufen", "hanlu", "shuangjian"],
+        winter: ["lidong", "xiaoxue", "daxue", "dongzhi", "xiaohan", "dahan"],
       };
 
       // --- Init ---
@@ -1349,8 +1854,8 @@
         fetchRates();
         loadSettings();
         renderList();
+        initSettingsUI();
 
-        // Global click listeners for closing dropdowns
         window.addEventListener("click", (e) => {
           if (e.target.classList.contains("modal-backdrop")) {
             closeModal(e.target.id);
@@ -1376,9 +1881,155 @@
           .addEventListener("input", updatePriceCalc);
       });
 
+      // --- 初始化設定面板 UI ---
+      function initSettingsUI() {
+        // 根據目前設定初始化 Tab
+        if (settings.theme === "auto") {
+          activeSeasonTab = "auto";
+        } else {
+          const termData = solarTerms[settings.theme];
+          if (termData) {
+            activeSeasonTab = termData.season;
+          } else {
+            activeSeasonTab = "auto";
+          }
+        }
+        updateSeasonTabsUI();
+        updateAutoModeDisplay();
+      }
+
+      // --- 季節 Tab 選擇 ---
+      function selectSeasonTab(season) {
+        activeSeasonTab = season;
+        updateSeasonTabsUI();
+
+        if (season === "auto") {
+          setTheme("auto");
+        }
+      }
+
+      function updateSeasonTabsUI() {
+        // 更新 Tab 樣式
+        document.querySelectorAll(".season-tab").forEach((tab) => {
+          const tabSeason = tab.dataset.season;
+          if (tabSeason === activeSeasonTab) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
+        });
+
+        // 顯示/隱藏內容
+        const autoDesc = document.getElementById("auto-mode-desc");
+        const termsGrid = document.getElementById("solar-terms-grid");
+
+        if (activeSeasonTab === "auto") {
+          autoDesc.classList.remove("hidden");
+          termsGrid.classList.add("hidden");
+          updateAutoModeDisplay();
+        } else {
+          autoDesc.classList.add("hidden");
+          termsGrid.classList.remove("hidden");
+          renderSolarTermsGrid(activeSeasonTab);
+        }
+      }
+
+      // --- 更新自動模式顯示 ---
+      function updateAutoModeDisplay() {
+        const currentTermKey = detectCurrentSolarTerm();
+        const termData = solarTerms[currentTermKey];
+
+        document.getElementById("auto-current-icon").textContent =
+          termData.icon;
+        document.getElementById("auto-current-icon").style.background =
+          termData.badge;
+        document.getElementById("auto-current-term").textContent =
+          termData.name;
+
+        const checkMark = document.getElementById("auto-check-mark");
+        if (settings.theme === "auto") {
+          checkMark.classList.remove("hidden");
+          checkMark.style.backgroundColor = termData.badge;
+        } else {
+          checkMark.classList.add("hidden");
+        }
+      }
+
+      // --- 渲染節氣網格 ---
+      function renderSolarTermsGrid(season) {
+        const grid = document.getElementById("solar-terms-grid");
+        const terms = seasonTerms[season];
+
+        let html = '<div class="season-grid mt-3">';
+        terms.forEach((termKey) => {
+          const term = solarTerms[termKey];
+          const isSelected = settings.theme === termKey;
+          html += `
+            <button 
+              onclick="selectSolarTerm('${termKey}')" 
+              class="solar-term-btn ${isSelected ? "selected" : ""}"
+              style="${isSelected ? `--theme-color: ${term.badge}` : ""}"
+            >
+              <div class="color-dot" style="background-color: ${
+                term.badge
+              };"></div>
+              <div class="term-name">${term.icon} ${term.name}</div>
+            </button>
+          `;
+        });
+        html += "</div>";
+
+        grid.innerHTML = html;
+      }
+
+      // --- 選擇節氣 ---
+      function selectSolarTerm(termKey) {
+        setTheme(termKey);
+        renderSolarTermsGrid(activeSeasonTab);
+      }
+
+      // --- 偵測當前節氣 ---
+      function detectCurrentSolarTerm() {
+        const now = new Date();
+        const month = now.getMonth() + 1;
+        const day = now.getDate();
+
+        // 找出當前所在的節氣
+        let currentTerm = "dahan"; // 預設大寒
+
+        for (let i = 0; i < solarTermDates.length; i++) {
+          const term = solarTermDates[i];
+          const nextTerm = solarTermDates[(i + 1) % solarTermDates.length];
+
+          // 判斷是否在這個節氣範圍內
+          if (term.month === month && day >= term.day) {
+            if (nextTerm.month === month && day < nextTerm.day) {
+              currentTerm = term.key;
+              break;
+            } else if (nextTerm.month !== month) {
+              currentTerm = term.key;
+              break;
+            }
+          } else if (term.month < month) {
+            currentTerm = term.key;
+          }
+        }
+
+        // 處理跨年情況
+        if (month === 1) {
+          if (day < 6) currentTerm = "dongzhi";
+          else if (day < 20) currentTerm = "xiaohan";
+          else currentTerm = "dahan";
+        } else if (month === 12) {
+          if (day >= 22) currentTerm = "dongzhi";
+          else if (day >= 7) currentTerm = "daxue";
+        }
+
+        return currentTerm;
+      }
+
       // --- Core Functions ---
       function renderList() {
-        // Filter
         let list = items.filter((item) => {
           if (!searchQuery) return true;
           const term = searchQuery.toLowerCase();
@@ -1387,11 +2038,6 @@
             (item.note && item.note.toLowerCase().includes(term))
           );
         });
-
-        // Update Counts
-        const countAll = list.length;
-        const countActive = list.filter((i) => !i.completed).length;
-        const countCompleted = list.filter((i) => i.completed).length;
 
         document.getElementById(
           "tab-all"
@@ -1407,36 +2053,41 @@
           items.filter((i) => i.completed).length
         })</span>`;
 
-        // Apply Tab Filter
         if (currentFilter === "active") list = list.filter((i) => !i.completed);
         if (currentFilter === "completed")
           list = list.filter((i) => i.completed);
 
-        // Sort
-        list.sort((a, b) => {
-          let va = a[sortField],
-            vb = b[sortField];
-          if (sortField === "category") {
-            va = a.category;
-            vb = b.category;
-          }
-          if (va < vb) return sortDesc ? 1 : -1;
-          if (va > vb) return sortDesc ? -1 : 1;
-          return 0;
-        });
+        if (sortField !== "custom") {
+          list.sort((a, b) => {
+            let va = a[sortField],
+              vb = b[sortField];
+            if (sortField === "category") {
+              va = a.category;
+              vb = b.category;
+            }
+            if (va < vb) return sortDesc ? 1 : -1;
+            if (va > vb) return sortDesc ? -1 : 1;
+            return 0;
+          });
+        }
 
-        // UI State
         const ul = document.getElementById("shopping-list");
         ul.innerHTML = "";
         const empty = document.getElementById("empty-state");
         const cleanBtn = document.getElementById("clean-btn-container");
 
         cleanBtn.classList.toggle("hidden", currentFilter !== "completed");
-        document.getElementById("sort-btn").innerHTML = sortDesc
-          ? '<i class="fa-solid fa-arrow-down"></i>'
-          : '<i class="fa-solid fa-arrow-up"></i>';
 
-        // Update Tabs Style
+        const sortBtn = document.getElementById("sort-btn");
+        if (sortField === "custom") {
+          sortBtn.classList.add("hidden");
+        } else {
+          sortBtn.classList.remove("hidden");
+          sortBtn.innerHTML = sortDesc
+            ? '<i class="fa-solid fa-arrow-down"></i>'
+            : '<i class="fa-solid fa-arrow-up"></i>';
+        }
+
         ["all", "active", "completed"].forEach((k) => {
           const btn = document.getElementById(`tab-${k}`);
           const isActive = k === currentFilter;
@@ -1465,8 +2116,13 @@
             const itemRate = rates[item.currency] || 1;
             const estTwd = Math.round(item.price * itemRate);
 
-            // Generate Content
             let tagsArr = [];
+            const dateObj = new Date(item.createdAt || Date.now());
+            const dateStr = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+            tagsArr.push(
+              `<span class="text-[10px] text-stone-300 font-bold mr-1"><i class="fa-regular fa-clock text-[9px]"></i> ${dateStr}</span>`
+            );
+
             if (item.target === "gift")
               tagsArr.push(
                 `<span class="inline-flex items-center gap-0.5 text-pink-500 text-[10px] font-black"><i class="fa-solid fa-gift"></i> 送禮</span>`
@@ -1489,7 +2145,6 @@
             if (item.url)
               contentHtml += `<a href="${item.url}" target="_blank" onclick="event.stopPropagation()" class="inline-flex items-center gap-1 text-[10px] text-blue-500 bg-blue-50 px-2 py-1 rounded-lg font-bold hover:bg-blue-100 mb-1"><i class="fa-solid fa-link text-[9px]"></i> 連結</a>`;
 
-            // Price HTML
             let priceHtml = "";
             if (isDone && item.actualPrice) {
               const actTwd = Math.round(item.actualPrice * itemRate);
@@ -1513,7 +2168,6 @@
                 : "";
             }
 
-            // Image
             let imgHtml = "";
             let imgClickAttr = "";
             const showImg =
@@ -1521,7 +2175,6 @@
 
             if (showImg) {
               imgHtml = `<img src="${showImg}" class="w-full h-full object-cover">`;
-              // Open Image Viewer logic
               imgClickAttr = `onclick="event.stopPropagation(); openImageViewer('${showImg}')"`;
             } else {
               const catConfig = {
@@ -1538,31 +2191,34 @@
               const [icon, colorClass] =
                 catConfig[item.category] || catConfig.general;
               imgHtml = `<div class="w-full h-full flex items-center justify-center text-xl ${colorClass}"><i class="fa-solid ${icon}"></i></div>`;
-              // Default logic (Open Edit)
-              imgClickAttr = `onclick="handleClickItem(${item.id})"`;
+              imgClickAttr = isReorderMode
+                ? ""
+                : `onclick="handleClickItem(${item.id})"`;
             }
 
             li.className = `swipe-container fade-in-up select-none shadow-sm mb-2 ${
               isDone ? "opacity-60 grayscale-[0.5]" : ""
             }`;
+            li.dataset.id = item.id;
             li.style.animationDelay = `${index * 0.05}s`;
 
-            li.innerHTML = `
-               <div class="swipe-action-bg bg-red-500 text-white cursor-pointer" onclick="deleteItem(${
-                 item.id
-               }, event)">
-                  <div class="flex flex-col items-center gap-1 pl-6 font-bold text-[10px]">
-                     <i class="fa-solid fa-trash-can text-lg"></i> 刪除
-                  </div>
-               </div>
-               
-               <div 
-                  id="item-fg-${item.id}"
-                  class="swipe-content bg-white p-3 flex gap-2 items-start"
-                  ontouchstart="handleTouchStart(event, ${item.id})"
-                  ontouchmove="handleTouchMove(event, ${item.id})"
-                  ontouchend="handleTouchEnd(event, ${item.id})"
-               >
+            let leftActionHtml, rightExtraHtml, touchEvents, swipeBg;
+
+            if (isReorderMode) {
+              leftActionHtml = `
+                   <button onclick="deleteItem(${item.id}, event)" class="mt-0.5 w-[1.6em] h-[1.6em] flex items-center justify-center text-red-500 hover:text-red-600 active:scale-90 transition-transform">
+                       <i class="fa-solid fa-circle-minus text-xl"></i>
+                   </button>
+                `;
+              rightExtraHtml = `
+                   <div class="drag-handle px-4 py-6 flex items-center justify-center cursor-grab text-stone-300 active:text-stone-500 touch-none">
+                       <i class="fa-solid fa-bars text-lg"></i>
+                   </div>
+                `;
+              touchEvents = "";
+              swipeBg = "";
+            } else {
+              leftActionHtml = `
                   <label class="cute-checkbox mt-0.5" style="${
                     isDone
                       ? `background-color:${currentTheme.badge};border-color:${currentTheme.badge}`
@@ -1572,14 +2228,46 @@
                        isDone ? "checked" : ""
                      } onchange="toggleItem(${item.id})">
                   </label>
+                `;
+              rightExtraHtml = "";
+              touchEvents = `
+                  ontouchstart="handleTouchStart(event, ${item.id})"
+                  ontouchmove="handleTouchMove(event, ${item.id})"
+                  ontouchend="handleTouchEnd(event, ${item.id})"
+                `;
+              swipeBg = `
+               <div class="absolute inset-0 z-0 flex">
+                 <div class="w-1/2 bg-green-500 flex items-center justify-start pl-6 text-white cursor-pointer" onclick="toggleItemSilent(${item.id})">
+                    <div class="flex flex-col items-center gap-1 font-bold text-[10px]">
+                       <i class="fa-solid fa-check text-lg"></i> 入手
+                    </div>
+                 </div>
+                 <div class="w-1/2 bg-red-500 flex items-center justify-end pr-6 text-white cursor-pointer" onclick="deleteItem(${item.id}, event)">
+                    <div class="flex flex-col items-center gap-1 font-bold text-[10px]">
+                       <i class="fa-solid fa-trash-can text-lg"></i> 刪除
+                    </div>
+                 </div>
+               </div>`;
+            }
+
+            li.innerHTML = `
+               ${swipeBg}
+               <div 
+                  id="item-fg-${item.id}"
+                  class="swipe-content bg-white p-3 flex gap-2 items-start"
+                  ${touchEvents}
+               >
+                  ${leftActionHtml}
                   
                   <div class="flex-1 flex gap-2 items-start min-w-0">
                      <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0 border border-stone-100 shadow-inner bg-stone-50 cursor-pointer relative group active:scale-95 transition-transform" ${imgClickAttr}>
                         ${imgHtml}
                      </div>
-                     <div class="flex-1 min-w-0 flex flex-col cursor-pointer" onclick="handleClickItem(${
-                       item.id
-                     })">
+                     <div class="flex-1 min-w-0 flex flex-col cursor-pointer" ${
+                       !isReorderMode
+                         ? `onclick="handleClickItem(${item.id})"`
+                         : ""
+                     }>
                         <h3 class="font-black text-stone-700 text-sm leading-tight ${
                           isDone ? "strike-through" : ""
                         } mb-1 line-clamp-2">${item.name}</h3>
@@ -1590,14 +2278,19 @@
                         </div>
                      </div>
                   </div>
+                  ${rightExtraHtml}
                </div>
             `;
             ul.appendChild(li);
           });
+
+          if (isReorderMode && !sortableInstance) {
+            initSortable();
+          }
         }
       }
 
-      // --- Swipe Logic (Refined) ---
+      // --- Swipe Logic ---
       function handleTouchStart(e, id) {
         if (currentSwipeId !== null && currentSwipeId !== id)
           resetSwipe(currentSwipeId);
@@ -1609,19 +2302,16 @@
         const dx = e.touches[0].clientX - touchStartX;
         const dy = e.touches[0].clientY - touchStartY;
 
-        // Horizontal dominance check
         if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) {
           isSwiping = true;
-          // Prevent scroll only when swiping horizontally
           if (e.cancelable) e.preventDefault();
 
           const el = document.getElementById(`item-fg-${id}`);
           if (!el) return;
 
-          // Only allow dragging left (negative dx)
           let tx = dx;
-          if (tx > 0) tx = 0;
-          if (tx < -100) tx = -100; // Resistance limit
+          if (tx < -100) tx = -100;
+          if (tx > 100) tx = 100;
 
           el.style.transition = "none";
           el.style.transform = `translateX(${tx}px)`;
@@ -1635,10 +2325,13 @@
 
         el.style.transition = "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1)";
 
-        // Snap threshold (-40px)
         if (dx < -40) {
-          el.style.transform = `translateX(-80px)`; // Reveal delete
+          el.style.transform = `translateX(-80px)`;
           currentSwipeId = id;
+        } else if (dx > 40) {
+          el.style.transform = `translateX(0)`;
+          currentSwipeId = null;
+          toggleItemSilent(id);
         } else {
           el.style.transform = `translateX(0)`;
           currentSwipeId = null;
@@ -1654,10 +2347,9 @@
         if (currentSwipeId === id) currentSwipeId = null;
       }
 
-      // Only trigger edit if NOT swiping (click integrity)
       function handleClickItem(id) {
         if (currentSwipeId === id) {
-          resetSwipe(id); // Close swipe on click
+          resetSwipe(id);
           return;
         }
         const item = items.find((i) => i.id === id);
@@ -1749,7 +2441,7 @@
         const idx = items.findIndex((i) => i.id === id);
         if (idx === -1) return;
 
-        currentSwipeId = null; // Reset swipe state
+        currentSwipeId = null;
         deletedItemBackup = { item: items[idx], index: idx };
         items.splice(idx, 1);
         saveData();
@@ -1787,6 +2479,23 @@
           saveData();
           renderList();
         }
+      }
+
+      function toggleItemSilent(id) {
+        const item = items.find((i) => i.id === id);
+        if (!item) return;
+
+        if (!item.completed) {
+          item.completed = true;
+          if (!item.actualPrice && item.price) {
+            item.actualPrice = item.price;
+          }
+          showToast("已快速標記為入手！🎉");
+        } else {
+          item.completed = false;
+        }
+        saveData();
+        renderList();
       }
 
       function confirmPurchase(detailed) {
@@ -1923,54 +2632,69 @@
         settings.theme = t;
         saveSettings();
         applyTheme();
-        document.querySelectorAll(".theme-btn").forEach((btn) => {
-          if (
-            (t === "auto" && btn.innerText === "自動") ||
-            btn.onclick.toString().includes(t)
-          )
-            btn.classList.add("ring-2", "ring-stone-400");
-          else btn.classList.remove("ring-2", "ring-stone-400");
-        });
-      }
-      function applyTheme() {
-        if (settings.theme === "auto") detectSeason();
-        else {
-          currentTheme = customThemes[settings.theme];
-          applyThemeStyles();
+
+        // 更新設定面板 UI
+        if (t === "auto") {
+          activeSeasonTab = "auto";
+        } else {
+          const termData = solarTerms[t];
+          if (termData) {
+            activeSeasonTab = termData.season;
+          }
         }
+        updateSeasonTabsUI();
       }
-      function detectSeason() {
-        const m = new Date().getMonth() + 1;
-        let s = "winter";
-        if (m >= 3 && m <= 5) s = "spring";
-        else if (m >= 6 && m <= 8) s = "summer";
-        else if (m >= 9 && m <= 11) s = "autumn";
-        currentTheme = seasons[s];
-        document.getElementById("season-badge").textContent = `${
-          currentTheme.name
-        } · ${s.toUpperCase()}`;
-        applyThemeStyles();
+
+      function applyTheme() {
+        let termKey;
+        if (settings.theme === "auto") {
+          termKey = detectCurrentSolarTerm();
+        } else {
+          termKey = settings.theme;
+        }
+
+        const termData = solarTerms[termKey];
+        if (!termData) {
+          termKey = detectCurrentSolarTerm();
+          currentTheme = solarTerms[termKey];
+        } else {
+          currentTheme = termData;
+        }
+
+        applyThemeStyles(termKey);
       }
-      function applyThemeStyles() {
-        document.body.style.backgroundColor = currentTheme.bg;
-        document.documentElement.style.setProperty(
-          "--bg-color",
-          currentTheme.bg
-        );
+
+      function applyThemeStyles(termKey) {
+        const termData = solarTerms[termKey];
+
+        document.body.style.backgroundColor = termData.bg;
+        document.documentElement.style.setProperty("--bg-color", termData.bg);
         document.documentElement.style.setProperty(
           "--theme-color",
-          currentTheme.badge
+          termData.badge
         );
-        document.getElementById("season-badge").style.backgroundColor =
-          currentTheme.badge;
+
+        // 更新 Badge
+        const badge = document.getElementById("season-badge");
+        badge.style.backgroundColor = termData.badge;
+        badge.textContent = `${termData.name} · ${termData.icon}`;
+
+        // 更新按鈕
         document.getElementById(
           "nav-add-btn"
-        ).className = `w-14 h-14 rounded-full text-white shadow-lg shadow-stone-200 border-4 border-white flex items-center justify-center text-2xl z-50 ${currentTheme.btn}`;
+        ).className = `w-14 h-14 rounded-full text-white shadow-lg shadow-stone-200 border-4 border-white flex items-center justify-center text-2xl z-50 ${termData.btn}`;
         document.getElementById(
           "add-btn"
-        ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${currentTheme.btn}`;
+        ).className = `w-full py-4 rounded-2xl text-white font-black text-sm shadow-lg hover:shadow-xl btn-press flex items-center justify-center gap-2 transition-all transform ${termData.btn}`;
+
+        const reorderBtn = document.getElementById("reorder-btn");
+        if (reorderBtn && !isReorderMode && sortField === "custom") {
+          reorderBtn.className = `flex w-10 h-full items-center justify-center ${termData.btn} border border-transparent rounded-xl text-white text-[10px] shadow-md hover:opacity-90 active:scale-90 transition-all duration-300`;
+        }
+
         renderList();
       }
+
       function saveSettings() {
         settings.showTags = document.getElementById("toggle-tags").checked;
         localStorage.setItem("shunmemo_settings", JSON.stringify(settings));
@@ -1983,6 +2707,7 @@
       }
       function openSettings() {
         document.getElementById("settings-modal").classList.add("open");
+        initSettingsUI();
       }
       function openGuideModal() {
         document.getElementById("guide-modal").classList.add("open");
@@ -2176,15 +2901,76 @@
       }
       function setFilter(f) {
         currentFilter = f;
+        if (isReorderMode) toggleReorderMode();
         renderList();
       }
       function setSortField(f) {
         sortField = f;
+        const btn = document.getElementById("reorder-btn");
+        if (f === "custom") {
+          btn.classList.remove("hidden");
+          btn.classList.add("flex", "animate-in", "zoom-in", "duration-300");
+          btn.className = `flex w-10 h-full items-center justify-center ${currentTheme.btn} border border-transparent rounded-xl text-white text-[10px] shadow-md hover:opacity-90 active:scale-90 transition-all duration-300`;
+          btn.innerHTML = '<i class="fa-solid fa-list-ul text-sm"></i>';
+
+          showToast("切換為自訂排序，可點擊按鈕編輯順序", "success");
+        } else {
+          btn.classList.add("hidden");
+          btn.classList.remove("flex");
+          if (isReorderMode) toggleReorderMode();
+        }
         renderList();
       }
       function toggleSortDirection() {
         sortDesc = !sortDesc;
         renderList();
+      }
+
+      function toggleReorderMode() {
+        isReorderMode = !isReorderMode;
+        const btn = document.getElementById("reorder-btn");
+
+        if (isReorderMode) {
+          if (searchQuery || currentFilter !== "all") {
+            searchQuery = "";
+            document.getElementById("search-input").value = "";
+            currentFilter = "all";
+            showToast("編輯模式下顯示全部商品");
+          }
+
+          btn.className =
+            "flex w-10 h-full items-center justify-center bg-green-400 border border-green-400 rounded-xl text-white text-[10px] shadow-md animate-pulse-slow active:scale-90 transition-all duration-300";
+          btn.innerHTML = '<i class="fa-solid fa-check text-base"></i>';
+        } else {
+          btn.className = `flex w-10 h-full items-center justify-center ${currentTheme.btn} border border-transparent rounded-xl text-white text-[10px] shadow-md hover:opacity-90 active:scale-90 transition-all duration-300`;
+          btn.innerHTML = '<i class="fa-solid fa-list-ul text-sm"></i>';
+
+          if (sortableInstance) {
+            sortableInstance.destroy();
+            sortableInstance = null;
+          }
+        }
+        renderList();
+      }
+
+      function initSortable() {
+        const el = document.getElementById("shopping-list");
+        sortableInstance = new Sortable(el, {
+          handle: ".drag-handle",
+          animation: 150,
+          delay: 100,
+          delayOnTouchOnly: true,
+          onEnd: function (evt) {
+            const oldIndex = evt.oldIndex;
+            const newIndex = evt.newIndex;
+
+            if (oldIndex !== newIndex) {
+              const movedItem = items.splice(oldIndex, 1)[0];
+              items.splice(newIndex, 0, movedItem);
+              saveData();
+            }
+          },
+        });
       }
       function clearCompleted() {
         if (confirm("確定清除完成項目？")) {
@@ -2237,7 +3023,6 @@
         }, 600);
       }
 
-      // --- Image Viewer Functions ---
       function openImageViewer(src) {
         const modal = document.getElementById("image-viewer-modal");
         const img = document.getElementById("full-size-image");
@@ -2246,7 +3031,6 @@
         modal.classList.remove("hidden");
         modal.classList.add("flex");
 
-        // Small delay to trigger transition
         requestAnimationFrame(() => {
           modal.classList.remove("opacity-0");
           img.classList.remove("scale-95");
@@ -2265,7 +3049,7 @@
         setTimeout(() => {
           modal.classList.add("hidden");
           modal.classList.remove("flex");
-          img.src = ""; // Clear src
+          img.src = "";
         }, 300);
       }
 
