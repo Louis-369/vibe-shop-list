@@ -1,102 +1,40 @@
-# vibe-shop-list
+# ✈️ 世界口袋 To Buy (World Pocket To Buy)
 
-# ShunMemo | 旬の買い物 🛍️
+這是一個專為旅行者設計的行動優先購物清單 App。不需要安裝任何 App，只需一個 HTML 檔案即可在瀏覽器中運行，並支援 PWA 安裝至手機主畫面。
 
-ShunMemo 是一款專為**日本/韓國旅遊購物**設計的漸進式網頁應用程式 (PWA)。
-它結合了「日系可愛風格」與「實用購物功能」，幫助旅行者輕鬆管理購物清單、計算匯率，並解決語言溝通問題。
+## ✨ 特色功能
 
-![App Preview](https://img.shields.io/badge/Style-Kawaii-pink) ![Platform](https://img.shields.io/badge/Platform-Web%20%7C%20iOS%20%7C%20Android-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+- **📱 行動優先設計**: 針對手機操作優化，支援滑動手勢 (左滑刪除、右滑購買)、震動回饋與單手操作介面。
+- **💱 即時匯率換算**: 整合 API 抓取即時匯率，自動換算 JPY, KRW, USD, EUR 等幣別至 TWD。
+- **🎨 24 節氣主題**: 獨家的動態主題系統，隨季節與節氣自動變換 App 色調與風格。
+- **📋 智慧清單管理**:
+  - 支援單筆輸入與**批次貼上** (自動辨識名稱與金額)。
+  - 自訂排序 (拖曳排序)、分類篩選、購物助手標籤。
+  - 拍照記錄商品與實購憑證。
+- **💾 資料安全**: 資料儲存在瀏覽器本地 (LocalStorage)，並支援匯出/匯入備份 (JSON 檔案或純文字代碼)。
 
-## ✨ 特色功能 (Features)
+## 🛠️ 技術棧
 
-### 🌸 沉浸式體驗
+此專案為單頁應用程式 (Single Page Application)，無需後端伺服器。
 
-- **二十四節氣主題**：App 會根據當前日期自動變換配色與問候語（春櫻、夏海、秋楓、冬雪）。
-- **日系可愛 UI**：使用圓潤的 `Zen Maru Gothic` 字體與和紙質感背景。
+- **HTML5**: 語意化標籤與 PWA 設定。
+- **CSS (Tailwind CSS)**: 使用 Tailwind CSS CDN 進行快速樣式開發與 RWD 設計。
+- **JavaScript (Vanilla)**: 原生 JS 實作所有邏輯，包含 DOM 操作、資料存取、API 串接。
+- **Libraries**:
+  - [SortableJS](https://sortablejs.github.io/Sortable/): 處理拖曳排序。
+  - [FontAwesome](https://fontawesome.com/): 圖示庫。
+  - [Google Fonts](https://fonts.google.com/): 使用 "Noto Sans TC" 與 "Zen Maru Gothic" 字體。
 
-### ✈️ 出國購物優化
+## 🚀 如何使用
 
-- **雙幣即時換算**：輸入當地價格（JPY/KRW），即時顯示換算後的台幣（TWD）參考價。
-- **給店員看模式 (Clerk Mode)**：一鍵放大商品圖片與名稱，背景變暗，方便與店員溝通詢問。
-- **用途分類標籤**：清楚標示「自用」、「送禮」或「代購（幫誰買）」。
-
-### 📱 像 App 一樣好用
-
-- **PWA 支援**：可加入手機主畫面，離線也能開啟（基本功能）。
-- **備份與還原**：透過 Web Share API 直接將資料備份到 Apple 備忘錄或 Google Keep。
-- **隱私優先**：所有資料皆儲存於瀏覽器 LocalStorage，不需註冊帳號，不相關伺服器。
-
----
-
-## 🛠 技術規格 (Technical Specifications)
-
-本專案採用 **Single Page Application (SPA)** 架構，無後端伺服器依賴。
-
-| 項目         | 技術/工具                                          | 說明                                                |
-| :----------- | :------------------------------------------------- | :-------------------------------------------------- |
-| **核心架構** | HTML5, Vanilla JavaScript (ES6+)                   | 單一 `index.html` 檔案，零依賴建置                  |
-| **樣式框架** | **Tailwind CSS** (v4 via CDN)                      | 快速切版與 RWD 響應式設計                           |
-| **字體系統** | **Noto Sans TC** (思源黑體)<br>**Zen Maru Gothic** | 中文內容清晰不缺字<br>標題數字維持日系可愛感        |
-| **資料儲存** | Browser **LocalStorage**                           | `shunmemo_items` (清單), `shunmemo_settings` (設定) |
-| **外部 API** | ExchangeRate-API                                   | 獲取 TWD/JPY/USD/KRW 即時匯率                       |
-| **圖標庫**   | Font Awesome 6 (Free)                              | 介面圖標                                            |
-| **部署平台** | **GitHub Pages**                                   | 靜態網頁託管                                        |
-
----
-
-## 🚀 快速開始 (Quick Start)
-
-### 1. 線上體驗
-
-前往：`https://您的帳號.github.io/shun-memo/` (請替換為您的實際網址)
-
-### 2. 本地開發 (Local Development)
-
-由於本專案為單一 HTML 檔案，您不需要安裝 Node.js 或 npm。
-
-1.  複製專案：
-    ```bash
-    git clone https://github.com/your-username/shun-memo.git
-    ```
-2.  直接用瀏覽器打開 `index.html` 即可執行。
-3.  推薦使用 VS Code 的 "Live Server" 插件進行即時預覽。
-
----
-
-## 📲 安裝到手機 (PWA)
-
-**iOS (Safari):**
-
-1.  在 Safari 開啟網頁。
-2.  點擊底部「分享」按鈕 (方框箭頭)。
-3.  選擇「加入主畫面」。
-
-**Android (Chrome):**
-
-1.  在 Chrome 開啟網頁。
-2.  點擊右上角選單 (三點)。
-3.  選擇「安裝應用程式」或「加到主畫面」。
-
----
+1.  下載專案中的 `index.html` 檔案。
+2.  直接使用瀏覽器 (Chrome, Safari, Edge) 開啟該檔案即可使用。
+3.  **手機體驗**: 在手機瀏覽器開啟後，選擇「加入主畫面」(Add to Home Screen)，即可像原生 App 一樣全螢幕使用。
 
 ## 📂 檔案結構
 
-```
-shun-memo/
-├── index.html      # 核心應用程式 (HTML/CSS/JS 全部整合於此)
-└── README.md       # 專案說明文件
-```
+- `index.html`: 包含所有程式碼 (HTML/CSS/JS) 的核心檔案。
 
 ---
 
-## 📝 版本紀錄
-
-- **v2.1**: 修正繁體中文缺字問題 (Noto Sans TC)，優化設定開關動畫，修正數字鍵盤輸入。
-- **v2.0**: 新增匯率換算、給店員看模式、備份還原機制。
-- **v1.0**: 基礎購物清單功能，節氣主題變換。
-
----
-
-## 📄 授權 (License)
-
-Distributed under the MIT License. See `LICENSE` for more information.
+_祝您購物愉快！ Buy Happy!_ 🛍️
